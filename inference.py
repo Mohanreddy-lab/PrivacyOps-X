@@ -226,10 +226,12 @@ async def create_env() -> PrivacyOpsXEnv:
         if not image_name or image_name in seen:
             continue
         seen.add(image_name)
-        try:
-            return await PrivacyOpsXEnv.from_docker_image(image_name)
-        except Exception as exc:
-            last_error = exc
+        for _attempt in range(2):
+            try:
+                return await PrivacyOpsXEnv.from_docker_image(image_name)
+            except Exception as exc:
+                last_error = exc
+                await asyncio.sleep(0.5)
 
     for fallback_url in ("http://127.0.0.1:8000", "http://localhost:8000"):
         try:
