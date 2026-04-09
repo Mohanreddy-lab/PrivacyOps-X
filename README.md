@@ -12,11 +12,18 @@ tags:
 
 # PrivacyOps-X
 
-PrivacyOps-X is a real-world OpenEnv benchmark for privacy-rights operations. It simulates the work a privacy analyst performs when triaging access, deletion, and minor-account requests under identity, retention, legal-hold, and audit constraints. The environment is deterministic, uses typed Pydantic models, and exposes the standard `reset()`, `step()`, and `state()` API through OpenEnv. It also includes a Mini-RL environment with defined tasks, graders, and reward logic; evaluation includes programmatic checks and LLM scoring.
+PrivacyOps-X is a practical OpenEnv benchmark for privacy-rights operations. It mirrors how a privacy analyst handles access, deletion, and minor-account requests while balancing identity checks, retention rules, legal holds, and audit constraints. The environment is deterministic, uses typed Pydantic models, and exposes the standard `reset()`, `step()`, and `state()` API through OpenEnv.
+
+## Quick links
+
+- Main submission URL: https://mohanreddy1432-privacyops-x.hf.space
+- Hugging Face Space repo URL: https://huggingface.co/spaces/mohanreddy1432/privacyops-x
+- API docs: https://mohanreddy1432-privacyops-x.hf.space/docs
+- ReDoc: https://mohanreddy1432-privacyops-x.hf.space/redoc
 
 ## Why this environment
 
-This benchmark targets a real enterprise workflow instead of a game or toy problem. Privacy operations teams regularly need to:
+This benchmark focuses on a real enterprise workflow instead of a toy problem. Privacy operations teams regularly need to:
 
 - classify the request correctly
 - verify identity or guardian authority
@@ -24,7 +31,7 @@ This benchmark targets a real enterprise workflow instead of a game or toy probl
 - draft safe customer communications
 - maintain a defensible internal audit trail
 
-PrivacyOps-X turns that workflow into a reproducible agent benchmark with dense rewards, deterministic reviewers, and clear final grading.
+PrivacyOps-X turns that workflow into a reproducible agent benchmark with deterministic reviewers and clear final grading.
 
 ## Environment design
 
@@ -219,7 +226,7 @@ docker run -p 8000:8000 privacyops-x:latest
 ### Hugging Face Spaces deployment
 
 ```bash
-openenv push --repo-id your-username/privacyops-x
+openenv push --repo-id <your-username>/privacyops-x
 ```
 
 ## Baseline inference
@@ -239,14 +246,13 @@ It logs strictly in the required format:
 
 ## Judges quickstart
 
-These commands run the inference loop against the hosted Space (no Docker required). The script uses the OpenAI client but can route through Hugging Face with a free token.
+These commands run the inference loop against the hosted Space (no Docker required). The script uses the OpenAI client and reads all settings from environment variables.
 
 Windows (CMD):
 
 ```bat
 cd C:\Users\Mohan Reddy\Desktop\env
-set ENV_BASE_URL=https://mohanreddy1432-privacyops-x.hf.space
-set HF_ROUTER_URL=https://router.huggingface.co/v1
+set ENV_BASE_URL=<YOUR_SPACE_URL>
 set HF_TOKEN=hf_your_token_here
 set MODEL_NAME=gpt-5.4-mini
 set OPENAI_API_KEY=
@@ -257,15 +263,14 @@ macOS/Linux:
 
 ```bash
 cd ~/Desktop/env
-export ENV_BASE_URL=https://mohanreddy1432-privacyops-x.hf.space
-export HF_ROUTER_URL=https://router.huggingface.co/v1
+export ENV_BASE_URL=<YOUR_SPACE_URL>
 export HF_TOKEN=hf_your_token_here
 export MODEL_NAME=gpt-5.4-mini
 export OPENAI_API_KEY=
 python inference.py
 ```
 
-If you prefer OpenAI directly, set `OPENAI_API_KEY` and `API_BASE_URL=https://api.openai.com/v1`, then omit `HF_ROUTER_URL` and `HF_TOKEN`.
+If you prefer OpenAI directly, set `OPENAI_API_KEY` and `API_BASE_URL`, then omit `HF_TOKEN`.
 
 For local reproducibility without credentials, the script falls back to a deterministic reference policy when model requests fail. That fallback achieves the following canonical scores on seed `0`:
 
@@ -279,7 +284,7 @@ Local verification completed with:
 
 - `pytest -q`
 - `openenv validate`
-- `openenv validate --url http://127.0.0.1:8001`
+- `openenv validate --url <LOCAL_ENV_URL>`
 - `python inference.py` against a live local server using `ENV_BASE_URL`
 
 ## Project structure
