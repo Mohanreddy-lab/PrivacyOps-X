@@ -116,3 +116,10 @@ Recommended Colab model choices:
 - Best accuracy that is still realistic on Colab: `Qwen/Qwen3-4B` with `--use-lora --load-in-4bit`
 - Safer fallback for smaller Colab GPUs: `Qwen/Qwen3-1.7B` with `--use-lora --load-in-4bit`
 - Lowest-risk smoke test: `Qwen/Qwen3-0.6B`
+
+Colab rerun checklist:
+
+- Change the runtime to `GPU` before running the notebook.
+- Run `import torch; print(torch.cuda.is_available())` and make sure it prints `True`.
+- Before recloning, return to `/content` so you do not delete the folder you are currently inside.
+- If training fails, do not run evaluation or plotting until the checkpoint directory exists.
