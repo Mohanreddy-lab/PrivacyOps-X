@@ -9,7 +9,7 @@ from openenv.core.client_types import StepResult
 
 try:
     from .models import PrivacyOpsAction, PrivacyOpsObservation, PrivacyOpsState
-except ImportError:  # pragma: no cover
+except ImportError:
     from models import PrivacyOpsAction, PrivacyOpsObservation, PrivacyOpsState
 
 

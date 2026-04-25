@@ -118,6 +118,67 @@ REQUESTER_PLAYBOOKS: dict[str, dict[str, Any]] = {
             },
         ],
     },
+    "finale_cross_border_recovery_cascade": {
+        "required_requester_facts": [
+            "requester_provided_account_aliases",
+            "guardian_docs_offered",
+            "requester_acknowledges_billing_retention",
+            "guardian_accepts_partial_action",
+        ],
+        "optimal_steps": 24,
+        "step_limit": 28,
+        "generic_requester_reply": (
+            "Tell me what proof you need, which linked records you can still process, "
+            "and what must stay retained while the investigation is open."
+        ),
+        "requester_rules": [
+            {
+                "rule_id": "finale_full_alignment",
+                "keywords_all": ["guardian", "authority"],
+                "keywords_any": [
+                    "linked",
+                    "billing",
+                    "retain",
+                    "partial fulfillment",
+                    "cannot delete",
+                ],
+                "reply": (
+                    "The linked aliases are maya.ross@example.eu and "
+                    "maya.contracting@example.eu, and the child profile is on the same family plan. "
+                    "I can provide guardianship documents now. I understand some billing or legally held "
+                    "records may need to stay retained, and partial fulfillment is fine while the fraud "
+                    "review remains open."
+                ),
+                "fact_ids": [
+                    "requester_provided_account_aliases",
+                    "guardian_docs_offered",
+                    "requester_acknowledges_billing_retention",
+                    "guardian_accepts_partial_action",
+                ],
+            },
+            {
+                "rule_id": "finale_guardian_docs_only",
+                "keywords_all": ["guardian", "authority"],
+                "reply": (
+                    "I can send the guardianship documents right away if that is the required first step."
+                ),
+                "fact_ids": ["guardian_docs_offered"],
+            },
+            {
+                "rule_id": "finale_linked_accounts_only",
+                "keywords_any": ["linked", "account aliases", "billing", "retain"],
+                "reply": (
+                    "The linked aliases are maya.ross@example.eu and "
+                    "maya.contracting@example.eu. If some billing records must stay retained, "
+                    "please process the rest as soon as you can."
+                ),
+                "fact_ids": [
+                    "requester_provided_account_aliases",
+                    "requester_acknowledges_billing_retention",
+                ],
+            },
+        ],
+    },
 }
 
 
@@ -135,6 +196,7 @@ def load_tasks() -> dict[str, dict[str, Any]]:
         "easy_verified_access.json",
         "medium_unverified_erasure.json",
         "hard_guardian_legal_hold.json",
+        "finale_cross_border_cascade.json",
     ]
     tasks: dict[str, dict[str, Any]] = {}
     for filename in task_files:

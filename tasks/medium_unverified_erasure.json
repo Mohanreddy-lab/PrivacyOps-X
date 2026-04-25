@@ -93,6 +93,10 @@
     "delete both my eu accounts immediately",
     "do not delay the deletion"
   ],
+  "teacher_policy_query": "gdpr erasure identity billing retention",
+  "teacher_requester_message": "Please verify your identity and confirm which account emails are in scope. We may need to retain billing or invoice records while deleting eligible data.",
+  "teacher_internal_note": "sender mismatch; retain billing records; pending verification",
+  "teacher_reply": "Please verify your identity. We will retain certain billing records and delete eligible data after verification.",
   "optimal_steps": 12,
   "step_limit": 12
 }

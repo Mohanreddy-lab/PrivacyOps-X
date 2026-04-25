@@ -13,24 +13,28 @@ from openenv.core.env_server.types import EnvironmentMetadata
 try:
     from ..models import (
         BenchmarkBreakdown,
+        ImprovementLesson,
         MessageTurn,
         PolicyArticleView,
         PrivacyOpsAction,
         PrivacyOpsObservation,
         PrivacyOpsState,
         RecordView,
+        StakeholderMessage,
         WorkspaceFieldName,
         WorkspaceView,
     )
-except ImportError:  # pragma: no cover
+except ImportError:
     from models import (
         BenchmarkBreakdown,
+        ImprovementLesson,
         MessageTurn,
         PolicyArticleView,
         PrivacyOpsAction,
         PrivacyOpsObservation,
         PrivacyOpsState,
         RecordView,
+        StakeholderMessage,
         WorkspaceFieldName,
         WorkspaceView,
     )
@@ -55,10 +59,12 @@ from .engines import (
 )
 from .fixtures import load_policies, load_tasks, task_order
 from .grader import compute_partial_score, grade_episode
+from .reporting import build_improvement_lessons, build_milestones, build_theme_alignment
 
 
 RISK_BY_DIFFICULTY = {"easy": 0.20, "medium": 0.30, "hard": 0.40}
 SLA_DAYS_BY_JURISDICTION = {"gdpr": 30, "cpra": 45, "coppa": 30, "other": 30, "unknown": 30}
+SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
 
 def _resolve_sla_window(task: dict[str, Any], difficulty: str) -> int:
@@ -90,6 +96,8 @@ class PrivacyOpsXEnvironment(
     Environment[PrivacyOpsAction, PrivacyOpsObservation, PrivacyOpsState]
 ):
     """Deterministic privacy operations benchmark environment."""
+
+    SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
     def __init__(self) -> None:
         super().__init__()
@@ -148,7 +156,8 @@ class PrivacyOpsXEnvironment(
 
     def _choose_task(self, task_id: str | None) -> dict[str, Any]:
         if task_id is not None:
-            self._task_cycle_index = self._task_cycle.index(task_id)
+            if task_id in self._task_cycle:
+                self._task_cycle_index = self._task_cycle.index(task_id)
             return deepcopy(self._tasks[task_id])
         chosen = self._task_cycle[self._task_cycle_index % len(self._task_cycle)]
         self._task_cycle_index = (self._task_cycle_index + 1) % len(self._task_cycle)
@@ -200,6 +209,7 @@ class PrivacyOpsXEnvironment(
         self._last_review_snapshots = {}
         self._pending_self_review_issues = set()
         self._pending_self_review_expiry = None
+        self._refresh_derived_state()
         return self._build_observation(
             last_action_result="Environment reset",
             reward=0.0,
@@ -271,6 +281,10 @@ class PrivacyOpsXEnvironment(
             )
         )
         self._state.last_requester_message = variant["request_text"]
+        self._append_stakeholder_message(
+            sender="requester",
+            message=variant["request_text"],
+        )
 
     def _append_requester_turn(
         self,
@@ -293,6 +307,36 @@ class PrivacyOpsXEnvironment(
         if role == "requester":
             self._state.last_requester_message = message
 
+    def _append_stakeholder_message(
+        self,
+        *,
+        sender: str,
+        message: str,
+        severity: str = "info",
+        related_codes: list[str] | None = None,
+    ) -> None:
+        if (
+            self._state.stakeholder_inbox
+            and self._state.stakeholder_inbox[-1].sender == sender
+            and self._state.stakeholder_inbox[-1].message == message
+            and self._state.stakeholder_inbox[-1].severity == severity
+        ):
+            return
+        self._state.stakeholder_inbox.append(
+            StakeholderMessage(
+                message_id=f"stakeholder-{len(self._state.stakeholder_inbox)}",
+                sender=sender,
+                severity=severity,
+                message=message,
+                related_codes=related_codes or [],
+            )
+        )
+        self._state.stakeholder_inbox = self._state.stakeholder_inbox[-18:]
+
+    def _refresh_derived_state(self) -> None:
+        self._state.milestones = build_milestones(self._state, self._task())
+        self._state.theme_alignment = build_theme_alignment(self._state, self._task())
+
     def _review_signature(self) -> str:
         payload = {
             "workspace": self._state.workspace.model_dump(mode="json"),
@@ -313,6 +357,10 @@ class PrivacyOpsXEnvironment(
             "confidence_history": list(self._state.confidence_history),
             "review_summary": summarize_reviews(self._state.review_history),
             "failure_modes": self._state.failure_modes.model_dump(),
+            "theme_alignment": self._state.theme_alignment.model_dump(),
+            "milestone_progress": [
+                milestone.model_dump() for milestone in self._state.milestones
+            ],
         }
         if error_code is not None:
             info["error_code"] = error_code
@@ -321,6 +369,10 @@ class PrivacyOpsXEnvironment(
         if self._state.final_breakdown is not None:
             info["score_breakdown"] = self._state.final_breakdown.model_dump()
             info["final_score"] = self._state.final_breakdown.final_score
+        if self._state.improvement_lessons:
+            info["improvement_lessons"] = [
+                lesson.model_dump() for lesson in self._state.improvement_lessons
+            ]
         return info
 
     def _build_observation(
@@ -335,6 +387,7 @@ class PrivacyOpsXEnvironment(
         self._state.urgency_level = _urgency_from_deadline(
             self._state.sla_deadline, self._state.sla_window_steps
         )
+        self._refresh_derived_state()
         info_error = warning if error else None
         return PrivacyOpsObservation(
             task_id=self._state.task_id,
@@ -348,11 +401,19 @@ class PrivacyOpsXEnvironment(
             latest_requester_message=self._state.last_requester_message,
             revealed_requester_facts=list(self._state.revealed_requester_facts),
             review_findings=self._state.review_history[-8:],
+            stakeholder_inbox=[
+                message.model_copy(deep=True) for message in self._state.stakeholder_inbox
+            ],
+            milestones=[milestone.model_copy(deep=True) for milestone in self._state.milestones],
+            theme_alignment=self._state.theme_alignment.model_copy(deep=True),
             explanation_trace=list(self._state.explanation_trace),
             last_action_result=last_action_result,
             warning=warning,
             error=error,
             draft_reply=self._state.draft_reply,
+            improvement_lessons=[
+                lesson.model_copy(deep=True) for lesson in self._state.improvement_lessons
+            ],
             risk_score=self._state.risk_score,
             steps_remaining=steps_remaining,
             sla_deadline=self._state.sla_deadline,
@@ -511,9 +572,20 @@ class PrivacyOpsXEnvironment(
         if breakdown.confidence_calibration < 0.8 and self._state.confidence_history:
             self._state.failure_modes.overconfidence += 1
         self._state.final_breakdown = breakdown
+        self._state.improvement_lessons = build_improvement_lessons(
+            self._state, self._task(), breakdown
+        )
+        for lesson in self._state.improvement_lessons:
+            self._append_stakeholder_message(
+                sender="critic",
+                severity="warn" if breakdown.final_score < 0.95 else "info",
+                message=f"{lesson.title}: {lesson.description}",
+                related_codes=[lesson.lesson_id],
+            )
         self._state.submitted = submitted
         self._state.done = True
         self._state.user_reaction = simulate_user_reaction(breakdown.final_score)
+        self._refresh_derived_state()
         return breakdown
 
     def _action_alignment(
@@ -735,6 +807,13 @@ class PrivacyOpsXEnvironment(
         redundant = self._state.case_inspected
         self._state.case_inspected = True
         self._ensure_requester_thread_loaded()
+        self._append_stakeholder_message(
+            sender="system",
+            message=(
+                f"Case opened. Difficulty={self._state.difficulty}, "
+                f"SLA window={self._state.sla_window_steps} steps."
+            ),
+        )
         append_trace_tag(self._state, "case_inspected")
         if self._variant().get("contains_adversarial_instruction"):
             append_trace_tag(self._state, "prompt_injection_detected")
@@ -957,6 +1036,11 @@ class PrivacyOpsXEnvironment(
             interaction["reply"],
             fact_ids=revealed_fact_ids,
         )
+        self._append_stakeholder_message(
+            sender="requester",
+            message=interaction["reply"],
+            severity="warn" if interaction["confused"] else "info",
+        )
         if interaction["confused"]:
             self._state.audit_log.append("requester_confused")
         return {
@@ -993,6 +1077,13 @@ class PrivacyOpsXEnvironment(
         else:
             findings = run_audit_review(self._state, self._task())
         self._state.review_history.extend(findings)
+        for finding in findings:
+            self._append_stakeholder_message(
+                sender=action.reviewer,
+                message=finding.message,
+                severity=finding.severity,
+                related_codes=[finding.code],
+            )
         self._last_review_snapshots[action.reviewer] = signature
         if action.reviewer == "audit" and any(f.severity == "warn" for f in findings):
             append_trace_tag(self._state, "self_review_inconsistency_found")
@@ -1014,6 +1105,13 @@ class PrivacyOpsXEnvironment(
         issues = unresolved_self_review_issues(self._state, self._task())
         findings = run_self_review(self._state, self._task())
         self._state.review_history.extend(findings)
+        for finding in findings:
+            self._append_stakeholder_message(
+                sender="audit",
+                message=finding.message,
+                severity=finding.severity,
+                related_codes=[finding.code],
+            )
         redundant = not issues and any(
             finding.code == "SELF_OK" for finding in findings
         )

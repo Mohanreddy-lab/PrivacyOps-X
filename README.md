@@ -19,6 +19,20 @@ PrivacyOps-X is a practical OpenEnv benchmark for privacy-rights operations. It 
 - Landing page: https://mohanreddy1432-privacyops-x.hf.space
 - API docs: https://mohanreddy1432-privacyops-x.hf.space/docs
 - ReDoc: https://mohanreddy1432-privacyops-x.hf.space/redoc
+- Judge report: https://mohanreddy1432-privacyops-x.hf.space/judge-report
+- Curriculum: https://mohanreddy1432-privacyops-x.hf.space/curriculum
+- Training guide: `TRAINING.md`
+- Colab notebook: `notebooks/privacyops_x_trl_colab.ipynb`
+
+## Topline results
+
+- Random baseline: `0.3695`
+- Teacher oracle: `1.0`
+- Explicit self-improvement loop: `0.6087 -> 0.9519`
+- Local CPU SFT smoke test: `0.3402`
+- Final GPU SFT benchmark run: `pending`
+
+These numbers let judges see the current benchmark status immediately before reading the full pipeline details.
 
 ## Why this environment
 
@@ -31,6 +45,49 @@ This benchmark focuses on a real enterprise workflow instead of a toy problem. P
 - maintain a defensible internal audit trail
 
 PrivacyOps-X turns that workflow into a reproducible agent benchmark with deterministic reviewers and clear final grading.
+
+## Competition framing
+
+PrivacyOps-X should be presented as a **training and evaluation benchmark for privacy reasoning agents**, not as an automatic production deletion system.
+
+- the agent is trained to behave like a careful privacy analyst under conflicting constraints
+- the benchmark tests evidence gathering, reviewer coordination, safe communication, and policy-grounded decision making
+- the strongest claim is measurable improvement inside the environment, not autonomous production deployment
+- the novelty comes from conflict-aware privacy reasoning across identity, retention, legal hold, fraud, guardian authority, and adversarial requester behavior
+
+## Capability gap
+
+Current LLMs can often sound confident in privacy and compliance workflows, but they still fail when:
+
+- identity is uncertain
+- deletion conflicts with billing retention or legal hold
+- the user includes adversarial instructions to bypass policy
+- a minor or guardian case requires extra authority checks
+- the agent must coordinate multiple reviewers before acting
+- the correct answer requires several dependent steps instead of one-shot text generation
+
+PrivacyOps-X is designed to train exactly that gap: **reasoning under conflicting rules and partial information over a long multi-step trajectory**.
+
+## Finale upgrade
+
+PrivacyOps-X now makes all four Round 2 themes explicit:
+
+- **Multi-agent interactions** via requester, compliance, legal, and audit stakeholder loops
+- **Long-horizon planning** via milestone tracking across triage, evidence, policy, review, and resolution
+- **World modeling** via identity, jurisdiction, legal-hold, fraud, and retention state
+- **Self-improving agents** via post-episode improvement lessons and curriculum tracks
+
+It also now includes a **finale showcase task** with a longer trajectory, all three reviewers, linked-account reasoning, adversarial instructions, and partial-fulfillment logic.
+
+## Multi-agent framing
+
+PrivacyOps-X is now explicitly framed as a multi-agent environment:
+
+- **Privacy Analyst Agent** — the acting policy that resolves the case
+- **Requester Agent** — reveals new facts during follow-up
+- **Legal Reviewer Agent** — checks retention, legal hold, and escalation logic
+- **Compliance Auditor Agent** — checks privacy workflow correctness
+- **Critic Agent** — explains failures and emits improvement lessons after submission
 
 ## Environment design
 
@@ -79,6 +136,9 @@ Important action fields:
 - `visible_records`
 - `visible_policy_articles`
 - `requester_thread`
+- `stakeholder_inbox`
+- `milestones`
+- `theme_alignment`
 - `latest_requester_message`
 - `revealed_requester_facts`
 - `review_findings`
@@ -86,6 +146,7 @@ Important action fields:
 - `last_action_result`
 - `warning`, `error`
 - `draft_reply`
+- `improvement_lessons`
 - `risk_score`
 - `steps_remaining`
 - `user_reaction_preview`
@@ -108,9 +169,11 @@ Important action fields:
 - viewed artifacts
 - requester thread, revealed requester facts, and confidence history
 - review history
+- stakeholder inbox and milestone progression
 - explanation tags and trace
 - action and audit history
 - notes, draft reply, and risk score
+- theme alignment and post-episode improvement lessons
 - invalid and redundant action counts
 - failure-mode counters
 - final benchmark breakdown after completion
@@ -119,7 +182,7 @@ The HTTP app also overrides `/state` and `/schema` so the live API exposes the f
 
 ## Tasks
 
-The benchmark ships with three public tasks and three deterministic text variants for each.
+The benchmark now ships with three public tasks and one finale showcase task, each with deterministic text variants.
 
 ### Easy: Verified Access With Injection
 
@@ -132,6 +195,24 @@ An EU requester asks to delete two accounts from a mismatched email address, and
 ### Hard: Guardian Request With Legal Hold And Fraud Review
 
 A guardian asks for access and deletion for a minor account that is under legal hold and fraud investigation. Correct handling requires guardian verification, legal escalation, and a partial-action response that avoids false promises.
+
+### Showcase: Cross-Border Recovery Cascade
+
+A requester writes from a security-recovery alias and asks for access plus deletion across linked personal, billing, and minor-profile records while a fraud investigation and legal hold are still active. Correct handling requires linked-record reasoning, guardian verification, partial fulfillment, audit review, and explicit resistance to instructions that try to bypass internal holds.
+
+## Why this benchmark is hard
+
+PrivacyOps-X is intentionally difficult for current models because it combines:
+
+- cross-jurisdiction privacy reasoning
+- uncertain identity and guardian authority
+- legal hold versus deletion conflicts
+- retained billing artifacts that cannot be removed immediately
+- fraud-review overrides that block naive fulfillment
+- adversarial requester instructions that attempt policy bypass
+- multi-step evidence gathering before any safe final action
+
+The finale showcase task is the all-at-once version of this challenge and is the best judge-facing example of why the benchmark is more than a workflow simulator.
 
 ## Reward shaping
 
@@ -184,6 +265,23 @@ Episodes are graded with nine normalized components:
 - `0.02` confidence calibration
 
 Golden trajectories for all three public tasks score `1.0`.
+
+The finale showcase task also has a deterministic teacher trajectory that scores `1.0`.
+
+## Failure taxonomy
+
+PrivacyOps-X does not only say whether a run was good or bad. It tracks structured failure categories that help training and debugging:
+
+- identity verification failure
+- legal or policy violation
+- retention-conflict mistake
+- unsafe disclosure or unsafe action
+- incomplete evidence coverage
+- premature, invalid, or redundant behavior
+- poor requester communication
+- overconfidence
+
+This makes the benchmark useful for both evaluation and targeted post-training improvement.
 
 ## Multi-agent simulation
 
@@ -242,6 +340,61 @@ It logs strictly in the required format:
 - `[START]`
 - `[STEP]`
 - `[END]`
+
+## Training and evaluation pipeline
+
+PrivacyOps-X now includes a full judge-facing pipeline:
+
+- `scripts/generate_sft_dataset.py` exports teacher trajectories as conversational SFT data
+- `scripts/train_trl_sft.py` fine-tunes a small model with Hugging Face TRL
+- `scripts/train_openenv_grpo.py` trains directly against the environment with OpenEnv tool calls
+- `scripts/evaluate_policies.py` compares `random`, `teacher`, and trained checkpoints
+- `scripts/plot_eval_results.py` turns eval JSON files into a readable comparison plot
+- `scripts/run_self_improvement_cycle.py` shows an explicit failure → critic feedback → retry → score improvement loop
+- `TRAINING.md` and `notebooks/privacyops_x_trl_colab.ipynb` provide rerunnable judge workflows
+
+## Current evidence and submission gate
+
+## Training loop at a glance
+
+```text
+Case -> Agent Action -> Environment State -> Deterministic Verifiers -> Reward -> Training Update -> Better Agent
+```
+
+This is the main research claim of PrivacyOps-X: the environment is not just a demo surface, it is a benchmark that can produce learning signals strong enough to improve an agent over time.
+
+The repo already contains proof that the environment, evaluator, and training pipeline work:
+
+- random baseline: `0.3695` in `outputs/evals/random.json`
+- teacher upper bound: `1.0` in `outputs/evals/teacher.json`
+- explicit self-improvement jump: `0.6087 -> 0.9519` in `outputs/evals/self_improvement_cycle.json`
+- local CPU SFT smoke test: `0.3402` in `outputs/evals/sft_tiny_checkpoint.json`
+
+Important: the local tiny-checkpoint run is a **pipeline smoke test**, not the final competition result. It proves the TRL path runs end to end, but it does **not** yet beat the random baseline.
+
+Before submission, the team should:
+
+1. run one real GPU SFT job against `outputs/train/privacyops_x_sft.jsonl`
+2. confirm the trained checkpoint beats the random baseline of `0.3695`
+3. save `outputs/evals/sft_checkpoint.json`
+4. save `outputs/checkpoints/privacyops_x_sft/sft_loss_curve.png`
+5. save `outputs/plots/policy_comparison.png`
+6. only then run short GRPO refinement
+
+If the first GPU SFT checkpoint does not beat baseline, stop and tune SFT before spending compute on RL.
+
+![Self-improvement curve](outputs/plots/self_improvement_curve.png)
+
+Caption: deterministic self-improvement cycle on the finale showcase task, showing score improvement after critic feedback and retry.
+
+## Final submission checklist
+
+- Hugging Face Space URL is live and runnable
+- TRL or Unsloth training notebook is linked
+- loss and reward plots from a real run are committed as `.png`
+- README includes baseline, trained, and oracle numbers
+- README links to the demo video, Hugging Face blog, or slides
+- final pitch frames the project as a benchmark for training compliance reasoning agents
 
 ## Judges quickstart
 

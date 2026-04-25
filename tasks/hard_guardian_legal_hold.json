@@ -95,6 +95,10 @@
     "delete the account now",
     "erase my child's account immediately"
   ],
+  "teacher_policy_query": "minor guardian authority legal hold fraud retention",
+  "teacher_requester_message": "Please verify your authority as guardian. Because of the legal hold and fraud review we cannot delete all data now, but we can suppress marketing immediately.",
+  "teacher_internal_note": "guardian verification; legal hold; fraud investigation; suppress marketing only",
+  "teacher_reply": "Please verify your authority as guardian. A legal hold applies, so we cannot delete all data now.",
   "optimal_steps": 13,
   "step_limit": 14
 }

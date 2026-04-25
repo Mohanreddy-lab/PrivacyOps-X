@@ -6,7 +6,7 @@ from typing import Any
 
 try:
     from ..models import BenchmarkBreakdown, PrivacyOpsState
-except ImportError:  # pragma: no cover
+except ImportError:
     from models import BenchmarkBreakdown, PrivacyOpsState
 
 from .engines import clamp, contains_any_keyword, fraction_keywords_present, reviewers_used

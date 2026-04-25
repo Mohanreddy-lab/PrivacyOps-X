@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from openenv.core.env_server.types import Action, Observation, State
 
@@ -19,6 +19,31 @@ WorkspaceFieldName = Literal[
     "retention_decision",
     "escalation_required",
 ]
+
+MAX_ACTION_TARGET_ID_LENGTH = 128
+MAX_ACTION_QUERY_LENGTH = 240
+MAX_ACTION_CONTENT_LENGTH = 2_000
+MAX_ACTION_FIELD_VALUE_LENGTH = 128
+
+
+def _sanitize_text(
+    value: str,
+    *,
+    max_length: int,
+    allow_newlines: bool,
+    field_name: str,
+) -> str:
+    cleaned = value.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not cleaned:
+        raise ValueError(f"{field_name}_empty")
+    if len(cleaned) > max_length:
+        raise ValueError(f"{field_name}_too_long")
+    for character in cleaned:
+        if ord(character) < 32 and character not in {"\n", "\t"}:
+            raise ValueError(f"{field_name}_contains_control_characters")
+    if not allow_newlines and any(character in {"\n", "\t"} for character in cleaned):
+        raise ValueError(f"{field_name}_contains_invalid_whitespace")
+    return cleaned
 
 
 class WorkspaceView(BaseModel):
@@ -93,6 +118,36 @@ class ReviewFinding(BaseModel):
     message: str
 
 
+class StakeholderMessage(BaseModel):
+    message_id: str
+    sender: Literal["requester", "compliance", "legal", "audit", "critic", "system"]
+    severity: Literal["info", "warn", "fail"] = "info"
+    message: str
+    related_codes: list[str] = Field(default_factory=list)
+
+
+class MilestoneStatus(BaseModel):
+    milestone_id: str
+    title: str
+    status: Literal["available", "complete", "at_risk"] = "available"
+    progress: float = Field(default=0.0, ge=0.0, le=1.0)
+    rationale: str
+
+
+class ThemeAlignmentScores(BaseModel):
+    multi_agent_interactions: float = Field(default=0.0, ge=0.0, le=1.0)
+    long_horizon_planning: float = Field(default=0.0, ge=0.0, le=1.0)
+    world_modeling: float = Field(default=0.0, ge=0.0, le=1.0)
+    self_improvement: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class ImprovementLesson(BaseModel):
+    lesson_id: str
+    title: str
+    description: str
+    drill: str
+
+
 class FailureModes(BaseModel):
     hallucination: int = 0
     policy_violation: int = 0
@@ -140,6 +195,57 @@ class PrivacyOpsAction(Action):
     reviewer: Literal["compliance", "legal", "audit"] | None = None
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
+    @field_validator("target_id")
+    @classmethod
+    def validate_target_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = _sanitize_text(
+            value,
+            max_length=MAX_ACTION_TARGET_ID_LENGTH,
+            allow_newlines=False,
+            field_name="target_id",
+        )
+        if not all(character.isalnum() or character in "._:-" for character in cleaned):
+            raise ValueError("target_id_contains_invalid_characters")
+        return cleaned
+
+    @field_validator("query")
+    @classmethod
+    def validate_query(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _sanitize_text(
+            value,
+            max_length=MAX_ACTION_QUERY_LENGTH,
+            allow_newlines=False,
+            field_name="query",
+        )
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _sanitize_text(
+            value,
+            max_length=MAX_ACTION_CONTENT_LENGTH,
+            allow_newlines=True,
+            field_name="content",
+        )
+
+    @field_validator("field_value")
+    @classmethod
+    def validate_field_value(cls, value: str | int | bool | None) -> str | int | bool | None:
+        if not isinstance(value, str):
+            return value
+        return _sanitize_text(
+            value,
+            max_length=MAX_ACTION_FIELD_VALUE_LENGTH,
+            allow_newlines=False,
+            field_name="field_value",
+        )
+
 
 class PrivacyOpsObservation(Observation):
     task_id: str
@@ -153,11 +259,15 @@ class PrivacyOpsObservation(Observation):
     latest_requester_message: str | None = None
     revealed_requester_facts: list[str] = Field(default_factory=list)
     review_findings: list[ReviewFinding] = Field(default_factory=list)
+    stakeholder_inbox: list[StakeholderMessage] = Field(default_factory=list)
+    milestones: list[MilestoneStatus] = Field(default_factory=list)
+    theme_alignment: ThemeAlignmentScores = Field(default_factory=ThemeAlignmentScores)
     explanation_trace: list[str] = Field(default_factory=list)
     last_action_result: str
     warning: str | None = None
     error: str | None = None
     draft_reply: str = ""
+    improvement_lessons: list[ImprovementLesson] = Field(default_factory=list)
     risk_score: float = Field(ge=0.0, le=1.0)
     steps_remaining: int = Field(ge=0)
     sla_deadline: int = Field(ge=0)
@@ -185,12 +295,16 @@ class PrivacyOpsState(State):
     revealed_requester_facts: list[str] = Field(default_factory=list)
     confidence_history: list[float] = Field(default_factory=list)
     review_history: list[ReviewFinding] = Field(default_factory=list)
+    stakeholder_inbox: list[StakeholderMessage] = Field(default_factory=list)
+    milestones: list[MilestoneStatus] = Field(default_factory=list)
+    theme_alignment: ThemeAlignmentScores = Field(default_factory=ThemeAlignmentScores)
     explanation_tags: list[str] = Field(default_factory=list)
     explanation_trace: list[str] = Field(default_factory=list)
     action_history: list[str] = Field(default_factory=list)
     audit_log: list[str] = Field(default_factory=list)
     note_history: list[str] = Field(default_factory=list)
     draft_reply: str = ""
+    improvement_lessons: list[ImprovementLesson] = Field(default_factory=list)
     risk_score: float = Field(ge=0.0, le=1.0)
     sla_window_steps: int = Field(default=0, ge=0)
     sla_deadline: int = Field(default=0, ge=0)

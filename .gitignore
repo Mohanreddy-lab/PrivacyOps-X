@@ -6,3 +6,7 @@ outputs/logs/*
 outputs/evals/*
 !outputs/logs/.gitkeep
 !outputs/evals/.gitkeep
+.env
+.env.*
+*.pem
+*.key

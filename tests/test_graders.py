@@ -1,4 +1,5 @@
 from server.env import PrivacyOpsXEnvironment
+from server.teacher import build_teacher_actions
 from models import PrivacyOpsAction
 
 
@@ -120,3 +121,11 @@ def test_grader_is_deterministic() -> None:
     score_a = run_plan("easy_verified_access_with_injection", actions)
     score_b = run_plan("easy_verified_access_with_injection", actions)
     assert score_a == score_b
+
+
+def test_teacher_plan_solves_finale_task() -> None:
+    score = run_plan(
+        "finale_cross_border_recovery_cascade",
+        build_teacher_actions("finale_cross_border_recovery_cascade"),
+    )
+    assert score == 1.0

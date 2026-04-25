@@ -29,6 +29,11 @@
       "article_id": "policy_legal_hold",
       "title": "Legal hold and fraud investigation override",
       "excerpt": "Active legal hold or fraud investigations override ordinary deletion processing. Analysts may suppress optional marketing data, but must escalate the case and avoid promising full deletion."
+    },
+    {
+      "article_id": "policy_partial_fulfillment",
+      "title": "Partial fulfillment for linked privacy requests",
+      "excerpt": "When one privacy request spans linked accounts, minor data, billing records, or legally frozen artifacts, analysts must separate eligible disclosures and deletions from blocked artifacts. Approve partial fulfillment only after verification, document what remains retained, and explain the staged outcome clearly."
     }
   ]
 }

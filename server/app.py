@@ -2,22 +2,26 @@
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import tempfile
-import json
+import time
+from collections import defaultdict, deque
+from html import escape
 from pathlib import Path
 from typing import Any
 
 from fastapi import Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.routing import APIRoute
-from fastapi.responses import HTMLResponse
 from starlette.responses import Response
 from pydantic import BaseModel
 
 try:
     from openenv.core.env_server.http_server import create_app
     import openenv.core.env_server.web_interface as openenv_web_interface
-except Exception as exc:  # pragma: no cover
+except Exception as exc:
     raise ImportError(
         "openenv-core is required to run PrivacyOps-X. Install dependencies first."
     ) from exc
@@ -26,10 +30,22 @@ try:
     from ..models import PrivacyOpsAction, PrivacyOpsObservation, PrivacyOpsState
     from .env import PrivacyOpsXEnvironment
     from .fixtures import load_tasks
-except ImportError:  # pragma: no cover
+    from .reporting import build_curriculum_tracks
+except ImportError:
     from models import PrivacyOpsAction, PrivacyOpsObservation, PrivacyOpsState
     from server.env import PrivacyOpsXEnvironment
     from server.fixtures import load_tasks
+    from server.reporting import build_curriculum_tracks
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+MAX_REQUEST_BODY_BYTES = 32 * 1024
+DEFAULT_RATE_LIMIT_MAX_REQUESTS = 120
+DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 15 * 60
+READ_RATE_LIMIT_MAX_REQUESTS = 240
+EPISODE_RATE_LIMIT_MAX_REQUESTS = 120
+AUTH_RATE_LIMIT_MAX_REQUESTS = 5
+RATE_LIMIT_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
 
 
 class TypedSchemaResponse(BaseModel):
@@ -59,6 +75,32 @@ class HealthDetailResponse(BaseModel):
     tasks_loaded: int
 
 
+class TaskCardResponse(BaseModel):
+    task_id: str
+    difficulty: str
+    required_reviewers: list[str]
+    required_requester_facts: list[str]
+    theme_focus: list[str]
+
+
+class JudgeReportResponse(BaseModel):
+    env_name: str
+    version: str
+    problem_statement: str
+    themes: list[str]
+    stakeholder_roles: list[str]
+    task_cards: list[TaskCardResponse]
+    self_improvement_loop: list[str]
+    training_assets: list[str]
+    hidden_eval_strategy: str
+    judge_endpoints: list[str]
+
+
+class CurriculumResponse(BaseModel):
+    env_name: str
+    tracks: list[dict[str, Any]]
+
+
 def _strip_frontmatter(markdown: str) -> str:
     lines = markdown.splitlines()
     if len(lines) < 3 or lines[0].strip() != "---":
@@ -73,8 +115,7 @@ def _strip_frontmatter(markdown: str) -> str:
 
 
 def _prepare_web_readme() -> None:
-    root = Path(__file__).resolve().parent.parent
-    source = root / "README.md"
+    source = ROOT_DIR / "README.md"
     if not source.exists():
         return
     cleaned = _strip_frontmatter(source.read_text(encoding="utf-8"))
@@ -96,6 +137,190 @@ def _prepare_web_readme() -> None:
     openenv_web_interface._load_readme_from_filesystem = _prefer_cleaned_readme
 
 
+def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _first_existing(*relative_paths: str) -> Path | None:
+    for relative_path in relative_paths:
+        path = ROOT_DIR / relative_path
+        if path.exists():
+            return path
+    return None
+
+
+def _load_optional_json(*relative_paths: str) -> dict[str, Any] | None:
+    path = _first_existing(*relative_paths)
+    if path is None:
+        return None
+    return _read_json_if_exists(path)
+
+
+def _encode_image_data(path: Path | None) -> str | None:
+    if path is None or not path.exists():
+        return None
+    suffix = path.suffix.lower()
+    media_type = "image/png" if suffix == ".png" else "image/jpeg"
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{media_type};base64,{encoded}"
+
+
+def _format_score(value: float | None) -> str:
+    if value is None:
+        return "pending"
+    return f"{value:.4f}"
+
+
+def _render_trajectory(actions: list[dict[str, Any]] | None) -> str:
+    if not actions:
+        return "<p class='muted'>No trajectory available yet.</p>"
+    items = []
+    for action in actions:
+        payload = escape(json.dumps(action, ensure_ascii=False))
+        items.append(f"<li><code>{payload}</code></li>")
+    return "<ol class='trajectory'>" + "".join(items) + "</ol>"
+
+
+def _load_dashboard_payload() -> dict[str, Any]:
+    random_report = _load_optional_json(
+        "outputs/evals/random_finale_live.json",
+        "outputs/evals/random.json",
+    )
+    teacher_report = _load_optional_json(
+        "outputs/evals/teacher_finale_live.json",
+        "outputs/evals/teacher.json",
+    )
+    self_report = _load_optional_json(
+        "outputs/evals/self_improvement_cycle_live.json",
+        "outputs/evals/self_improvement_cycle.json",
+    )
+    sft_report = _load_optional_json("outputs/evals/sft_checkpoint.json")
+
+    random_plot = _encode_image_data(
+        _first_existing(
+            "outputs/plots/finale_live_random_vs_teacher.png",
+            "outputs/plots/policy_comparison.png",
+        )
+    )
+    self_plot = _encode_image_data(
+        _first_existing(
+            "outputs/plots/self_improvement_curve_live.png",
+            "outputs/plots/self_improvement_curve.png",
+        )
+    )
+    random_score = (
+        random_report.get("overall", {}).get("mean_final_score")
+        if random_report
+        else None
+    )
+    teacher_score = (
+        teacher_report.get("overall", {}).get("mean_final_score")
+        if teacher_report
+        else None
+    )
+    sft_score = sft_report.get("overall", {}).get("mean_final_score") if sft_report else None
+    baseline_score = self_report.get("baseline_score") if self_report else None
+    improved_score = self_report.get("improved_score") if self_report else None
+
+    return {
+        "random_score": random_score,
+        "teacher_score": teacher_score,
+        "sft_score": sft_score,
+        "baseline_score": baseline_score,
+        "improved_score": improved_score,
+        "before_behavior": self_report.get("before_behavior") if self_report else None,
+        "after_behavior": self_report.get("after_behavior") if self_report else None,
+        "random_plot": random_plot,
+        "self_plot": self_plot,
+    }
+
+
+def _client_identity(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _is_auth_like_path(path: str) -> bool:
+    auth_markers = ("auth", "login", "signin", "signup", "oauth", "token")
+    return any(segment in path for segment in auth_markers)
+
+
+def _resolve_rate_limit(request: Request) -> tuple[int, int]:
+    path = request.url.path.lower()
+    if _is_auth_like_path(path):
+        return AUTH_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_WINDOW_SECONDS
+    if path in {"/reset", "/step"}:
+        return EPISODE_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_WINDOW_SECONDS
+    if request.method.upper() == "GET":
+        return READ_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_WINDOW_SECONDS
+    return DEFAULT_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_WINDOW_SECONDS
+
+
+def _check_rate_limit(request: Request) -> int | None:
+    limit, window_seconds = _resolve_rate_limit(request)
+    bucket_key = f"{_client_identity(request)}:{request.method.upper()}:{request.url.path}"
+    timestamps = RATE_LIMIT_BUCKETS[bucket_key]
+    now = time.time()
+    cutoff = now - window_seconds
+    while timestamps and timestamps[0] <= cutoff:
+        timestamps.popleft()
+    if len(timestamps) >= limit:
+        return max(1, int(window_seconds - (now - timestamps[0])))
+    timestamps.append(now)
+    return None
+
+
+async def _validate_request_body(request: Request) -> Request | Response:
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            declared_length = int(content_length)
+        except ValueError:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Malformed Content-Length header."},
+            )
+        if declared_length > MAX_REQUEST_BODY_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Payload too large."},
+            )
+
+    if request.method.upper() not in {"POST", "PUT", "PATCH"}:
+        return request
+
+    body = await request.body()
+    if len(body) > MAX_REQUEST_BODY_BYTES:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": "Payload too large."},
+        )
+
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type and body:
+        try:
+            json.loads(body)
+        except json.JSONDecodeError:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Malformed JSON payload."},
+            )
+
+    async def receive() -> dict[str, Any]:
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    return Request(request.scope, receive)
+
+
 _prepare_web_readme()
 
 
@@ -104,7 +329,7 @@ app = create_app(
     PrivacyOpsAction,
     PrivacyOpsObservation,
     env_name="privacyops_x",
-    max_concurrent_envs=1,
+    max_concurrent_envs=16,
 )
 
 app.router.routes = [
@@ -119,8 +344,24 @@ app.router.routes = [
 
 
 @app.middleware("http")
-async def pretty_json_middleware(request: Request, call_next):
-    response = await call_next(request)
+async def security_and_pretty_json_middleware(request: Request, call_next):
+    retry_after = _check_rate_limit(request)
+    if retry_after is not None:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Please retry later."},
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    validated_request = await _validate_request_body(request)
+    if isinstance(validated_request, Response):
+        return validated_request
+
+    response = await call_next(validated_request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Cache-Control"] = "no-store"
     pretty = request.query_params.get("pretty")
     if not pretty or pretty.lower() in {"0", "false", "no"}:
         return response
@@ -209,8 +450,8 @@ def envinfo() -> EnvInfoResponse:
     step_limits = [int(task["step_limit"]) for task in tasks.values()]
     return EnvInfoResponse(
         env_name="PrivacyOps-X",
-        version="1.0",
-        tasks=["easy", "medium", "hard"],
+        version="1.2",
+        tasks=list(tasks.keys()),
         max_steps=max(step_limits) if step_limits else 0,
         reward_range=[0.0, 1.0],
         deterministic=True,
@@ -231,6 +472,396 @@ def healthz() -> HealthDetailResponse:
         env_loaded=True,
         tasks_loaded=len(tasks),
     )
+
+
+@app.get(
+    "/judge-report",
+    response_model=JudgeReportResponse,
+    tags=["Environment Info"],
+    summary="Get a judge-facing environment summary",
+    description="Return the benchmark framing, task cards, and self-improvement loop used in the finale pitch.",
+)
+def judge_report() -> JudgeReportResponse:
+    tasks = load_tasks()
+    focus_map = {
+        "easy": ["multi-agent interactions", "world modeling"],
+        "medium": ["long-horizon planning", "world modeling", "self-improvement"],
+        "hard": ["multi-agent interactions", "long-horizon planning", "world modeling"],
+    }
+    task_cards = [
+        TaskCardResponse(
+            task_id=task["task_id"],
+            difficulty=task["difficulty"],
+            required_reviewers=task["required_reviewers"],
+            required_requester_facts=task.get("required_requester_facts", []),
+            theme_focus=focus_map[task["difficulty"]],
+        )
+        for task in tasks.values()
+    ]
+    return JudgeReportResponse(
+        env_name="PrivacyOps-X",
+        version="1.1",
+        problem_statement=(
+            "Train and evaluate agents that resolve privacy-rights cases under real "
+            "operational pressure, hidden constraints, and multi-stakeholder review."
+        ),
+        themes=[
+            "multi-agent interactions",
+            "long-horizon planning",
+            "world modeling",
+            "self-improving agent systems",
+        ],
+        stakeholder_roles=["privacy_analyst", "requester", "compliance", "legal", "audit", "critic"],
+        task_cards=task_cards,
+        self_improvement_loop=[
+            "Run a deterministic episode and capture failure modes.",
+            "Extract improvement lessons and counterfactual drills.",
+            "Promote high-scoring agents to harder hidden variants and tighter budgets.",
+        ],
+        training_assets=[
+            "TRAINING.md",
+            "notebooks/privacyops_x_trl_colab.ipynb",
+            "scripts/generate_sft_dataset.py",
+            "scripts/train_trl_sft.py",
+            "scripts/train_openenv_grpo.py",
+            "scripts/evaluate_policies.py",
+            "scripts/plot_eval_results.py",
+            "scripts/run_self_improvement_cycle.py",
+        ],
+        hidden_eval_strategy=(
+            "Public tasks teach the workflow, while seeded variants and stricter step "
+            "budgets stress generalization without changing the API."
+        ),
+        judge_endpoints=["/docs", "/schema", "/envinfo", "/judge-report", "/curriculum", "/dashboard"],
+    )
+
+
+@app.get(
+    "/curriculum",
+    response_model=CurriculumResponse,
+    tags=["Environment Info"],
+    summary="Get the self-improvement curriculum",
+    description="Return the training tracks that turn benchmark failures into harder targeted drills.",
+)
+def curriculum() -> CurriculumResponse:
+    tasks = load_tasks()
+    return CurriculumResponse(
+        env_name="PrivacyOps-X",
+        tracks=build_curriculum_tracks(tasks),
+    )
+
+
+@app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
+@app.get("/report", include_in_schema=False, response_class=HTMLResponse)
+def dashboard() -> str:
+    payload = _load_dashboard_payload()
+    random_score = _format_score(payload["random_score"])
+    teacher_score = _format_score(payload["teacher_score"])
+    sft_score = _format_score(payload["sft_score"])
+    baseline_score = _format_score(payload["baseline_score"])
+    improved_score = _format_score(payload["improved_score"])
+    random_plot_html = (
+        f"<img src='{payload['random_plot']}' alt='Random vs teacher comparison plot' />"
+        if payload["random_plot"]
+        else "<div class='placeholder'>Comparison plot not available yet.</div>"
+    )
+    self_plot_html = (
+        f"<img src='{payload['self_plot']}' alt='Self-improvement curve plot' />"
+        if payload["self_plot"]
+        else "<div class='placeholder'>Self-improvement plot not available yet.</div>"
+    )
+    before_html = _render_trajectory(payload["before_behavior"])
+    after_html = _render_trajectory(payload["after_behavior"])
+    return f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>PrivacyOps-X Judge Dashboard</title>
+        <style>
+          :root {{
+            --bg: #07131f;
+            --panel: rgba(8, 20, 32, 0.9);
+            --panel-2: rgba(14, 30, 45, 0.95);
+            --ink: #eef4f8;
+            --muted: #9db2c4;
+            --teal: #72e6d1;
+            --amber: #ffbf70;
+            --rose: #ff8a80;
+            --blue: #7db8ff;
+            --line: rgba(132, 171, 196, 0.22);
+          }}
+          body {{
+            margin: 0;
+            color: var(--ink);
+            font-family: "Trebuchet MS", "Lucida Sans Unicode", sans-serif;
+            background:
+              radial-gradient(circle at top left, rgba(114, 230, 209, 0.14), transparent 30%),
+              radial-gradient(circle at 88% 10%, rgba(125, 184, 255, 0.14), transparent 24%),
+              linear-gradient(160deg, #051019 0%, #091827 45%, #11263a 100%);
+          }}
+          * {{ box-sizing: border-box; }}
+          .shell {{
+            width: min(1220px, calc(100vw - 28px));
+            margin: 0 auto;
+            padding: 28px 0 42px;
+          }}
+          .hero, .card {{
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 24px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+          }}
+          .hero {{
+            padding: 28px;
+          }}
+          .eyebrow {{
+            display: inline-flex;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(114, 230, 209, 0.22);
+            background: rgba(114, 230, 209, 0.08);
+            color: var(--teal);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.8rem;
+          }}
+          h1 {{
+            margin: 14px 0 10px;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-family: Georgia, "Times New Roman", serif;
+          }}
+          p {{
+            color: var(--muted);
+            line-height: 1.7;
+          }}
+          .actions {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+          }}
+          .button {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            text-decoration: none;
+            color: var(--ink);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            font-weight: 700;
+          }}
+          .button.primary {{
+            background: linear-gradient(135deg, var(--teal), #95f4e4);
+            color: #061018;
+            border-color: transparent;
+          }}
+          .grid {{
+            display: grid;
+            gap: 18px;
+            margin-top: 22px;
+          }}
+          .stats {{
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+          }}
+          .card {{
+            padding: 20px;
+          }}
+          .label {{
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.76rem;
+          }}
+          .value {{
+            margin-top: 8px;
+            font-size: 2rem;
+            font-weight: 800;
+          }}
+          .value small {{
+            display: block;
+            font-size: 0.92rem;
+            color: var(--muted);
+            margin-top: 6px;
+          }}
+          .section {{
+            margin-top: 30px;
+          }}
+          .section h2 {{
+            margin: 0 0 14px;
+            color: var(--amber);
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 0.9rem;
+          }}
+          .split {{
+            display: grid;
+            gap: 18px;
+            grid-template-columns: 1fr 1fr;
+          }}
+          .stack {{
+            display: grid;
+            gap: 18px;
+            grid-template-columns: 1fr 1fr;
+          }}
+          .plot {{
+            overflow: hidden;
+          }}
+          .plot img {{
+            display: block;
+            width: 100%;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: #051019;
+          }}
+          .placeholder {{
+            min-height: 240px;
+            display: grid;
+            place-items: center;
+            border-radius: 18px;
+            border: 1px dashed rgba(255,255,255,0.16);
+            color: var(--muted);
+            background: var(--panel-2);
+          }}
+          .trajectory {{
+            margin: 0;
+            padding-left: 22px;
+          }}
+          .trajectory li {{
+            margin-bottom: 10px;
+            color: var(--ink);
+          }}
+          code {{
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(125, 184, 255, 0.08);
+            color: #d8ebff;
+            white-space: pre-wrap;
+            word-break: break-word;
+          }}
+          table {{
+            width: 100%;
+            border-collapse: collapse;
+          }}
+          th, td {{
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+          }}
+          th {{
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.74rem;
+          }}
+          .muted {{ color: var(--muted); }}
+          @media (max-width: 980px) {{
+            .stats, .split, .stack {{
+              grid-template-columns: 1fr;
+            }}
+          }}
+        </style>
+      </head>
+      <body>
+        <div class="shell">
+          <section class="hero">
+            <div class="eyebrow">Judge dashboard</div>
+            <h1>PrivacyOps-X report view</h1>
+            <p>
+              This page is the fastest path for judges to understand the benchmark:
+              baseline range, oracle upper bound, self-improvement evidence, plots,
+              and one before/after trajectory on the finale case.
+            </p>
+            <div class="actions">
+              <a class="button primary" href="/docs">Open API docs</a>
+              <a class="button" href="/judge-report">Judge report JSON</a>
+              <a class="button" href="/curriculum">Curriculum JSON</a>
+              <a class="button" href="/schema">Typed schema</a>
+            </div>
+          </section>
+
+          <section class="grid stats">
+            <article class="card">
+              <div class="label">Random finale</div>
+              <div class="value">{random_score}<small>lower-bound baseline</small></div>
+            </article>
+            <article class="card">
+              <div class="label">Teacher finale</div>
+              <div class="value">{teacher_score}<small>oracle upper bound</small></div>
+            </article>
+            <article class="card">
+              <div class="label">Self-improve before</div>
+              <div class="value">{baseline_score}<small>adaptive policy start</small></div>
+            </article>
+            <article class="card">
+              <div class="label">Self-improve after</div>
+              <div class="value">{improved_score}<small>adaptive policy end</small></div>
+            </article>
+            <article class="card">
+              <div class="label">GPU SFT checkpoint</div>
+              <div class="value">{sft_score}<small>{"pending run" if payload["sft_score"] is None else "trained checkpoint"}</small></div>
+            </article>
+          </section>
+
+          <section class="section">
+            <h2>Plots</h2>
+            <div class="split">
+              <article class="card plot">
+                <h3>Finale baseline range</h3>
+                <p class="muted">Random policy versus teacher policy on the showcase task.</p>
+                {random_plot_html}
+              </article>
+              <article class="card plot">
+                <h3>Self-improvement curve</h3>
+                <p class="muted">Failure-aware adaptive policy improving over repeated episodes.</p>
+                {self_plot_html}
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Before vs after</h2>
+            <div class="split">
+              <article class="card">
+                <h3>Before improvement</h3>
+                <p class="muted">Short, shallow trajectory that submits with limited evidence and no reviewer coordination.</p>
+                {before_html}
+              </article>
+              <article class="card">
+                <h3>After improvement</h3>
+                <p class="muted">Full trajectory with record inspection, policy grounding, requester follow-up, review, and self-check.</p>
+                {after_html}
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Reward breakdown</h2>
+            <article class="card">
+              <table>
+                <thead>
+                  <tr><th>Metric</th><th>Meaning</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Compliance</td><td>Follows privacy workflow and policy requirements.</td></tr>
+                  <tr><td>Safety</td><td>Avoids harmful disclosure, unsafe routing, or false promises.</td></tr>
+                  <tr><td>Evidence</td><td>Opens the right records, policy, and requester facts before acting.</td></tr>
+                  <tr><td>Legal</td><td>Handles legal hold, retention, and escalation consistently.</td></tr>
+                  <tr><td>Communication</td><td>Produces safe requester replies and clear internal notes.</td></tr>
+                  <tr><td>Efficiency</td><td>Avoids redundant or wasteful steps while staying within budget.</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </section>
+        </div>
+      </body>
+    </html>
+    """
 
 
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
@@ -553,6 +1184,7 @@ def index() -> str:
                 </p>
                 <div class="actions">
                   <a class="button button-primary" href="/web">Open Playground</a>
+                  <a class="button button-secondary" href="/dashboard">Judge Dashboard</a>
                   <a class="button button-secondary" href="/docs">API Docs</a>
                   <a class="button button-secondary" href="/schema">Typed Schema</a>
                   <a class="button button-secondary" href="/demo">Demo</a>
@@ -581,8 +1213,8 @@ def index() -> str:
               <div class="stat-value">3<small>compliance, legal, audit</small></div>
             </article>
             <article class="card">
-              <div class="stat-label">Baseline</div>
-              <div class="stat-value">1.0<small>easy / medium / hard on live validation</small></div>
+              <div class="stat-label">Self-improvement</div>
+              <div class="stat-value">0.95<small>from 0.61 on the finale task</small></div>
             </article>
             <article class="card">
               <div class="stat-label">Deployment</div>

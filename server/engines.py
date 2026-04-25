@@ -8,7 +8,7 @@ from typing import Any, Iterable
 
 try:
     from ..models import PrivacyOpsState, ReviewFinding
-except ImportError:  # pragma: no cover
+except ImportError:
     from models import PrivacyOpsState, ReviewFinding
 
 

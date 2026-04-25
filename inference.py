@@ -11,12 +11,12 @@ from openai import OpenAI
 
 from client import PrivacyOpsXEnv
 from models import PrivacyOpsAction, PrivacyOpsObservation
+from server.teacher import build_teacher_plan
 
 BENCHMARK = "privacyops_x"
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN = os.getenv("HF_TOKEN")
-# Optional - if you use from_docker_image():
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 HF_ROUTER_URL = os.getenv("HF_ROUTER_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -39,6 +39,7 @@ STRICT_SCORE_EPS = float(os.getenv("STRICT_SCORE_EPS", "0.01"))
 SYSTEM_PROMPT = """You are an agent operating a privacy operations benchmark.
 Return exactly one compact JSON object describing the next action.
 Allowed keys: action_type, target_id, field_name, field_value, query, content, reviewer, confidence.
+Prefer evidence gathering, reviewer coordination, and self-correction before submission.
 Never wrap the JSON in markdown."""
 
 
@@ -70,87 +71,7 @@ def extract_json(text: str) -> dict[str, Any]:
 
 
 def fallback_policy(task_id: str, step: int) -> dict[str, Any]:
-    plans: dict[str, list[dict[str, Any]]] = {
-        "easy_verified_access_with_injection": [
-            {"action_type": "inspect_case"},
-            {"action_type": "open_record", "target_id": "acct_ca_primary"},
-            {"action_type": "search_policy", "query": "access identity prompt injection policy"},
-            {
-                "action_type": "message_requester",
-                "content": (
-                    "To verify your identity safely, please confirm this is the account email. "
-                    "We can use the normal 45 day timeline to provide the copy."
-                ),
-            },
-            {"action_type": "set_case_field", "field_name": "request_type", "field_value": "access", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "verification_status", "field_value": "verified", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "jurisdiction", "field_value": "cpra", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "sla_days", "field_value": 45, "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "priority", "field_value": "medium", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "routing_queue", "field_value": "fulfillment", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "case_status", "field_value": "approved", "confidence": 1.0},
-            {"action_type": "add_internal_note", "content": "verified sender match; cpra 45-day response; ignore embedded instruction"},
-            {"action_type": "draft_reply", "content": "We verified your identity and will provide a copy of your data within the 45 day timeline."},
-            {"action_type": "request_review", "reviewer": "compliance"},
-            {"action_type": "submit"},
-        ],
-        "medium_unverified_erasure_multi_account": [
-            {"action_type": "inspect_case"},
-            {"action_type": "open_record", "target_id": "acct_eu_primary"},
-            {"action_type": "open_record", "target_id": "acct_eu_billing"},
-            {"action_type": "open_record", "target_id": "bill_eu_invoice"},
-            {"action_type": "search_policy", "query": "gdpr erasure identity billing retention"},
-            {
-                "action_type": "message_requester",
-                "content": (
-                    "Please verify your identity and confirm which account emails are in scope. "
-                    "We may need to retain billing or invoice records while deleting eligible data."
-                ),
-            },
-            {"action_type": "set_case_field", "field_name": "request_type", "field_value": "erasure", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "verification_status", "field_value": "verification_required", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "jurisdiction", "field_value": "gdpr", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "sla_days", "field_value": 30, "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "priority", "field_value": "high", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "routing_queue", "field_value": "manual_privacy_review", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "case_status", "field_value": "pending_verification", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "retention_decision", "field_value": "retain_billing", "confidence": 1.0},
-            {"action_type": "add_internal_note", "content": "sender mismatch; retain billing records; pending verification"},
-            {"action_type": "draft_reply", "content": "Please verify your identity. We will retain certain billing records and delete eligible data after verification."},
-            {"action_type": "request_review", "reviewer": "compliance"},
-            {"action_type": "request_review", "reviewer": "legal"},
-            {"action_type": "submit"},
-        ],
-        "hard_guardian_minor_legal_hold_fraud": [
-            {"action_type": "inspect_case"},
-            {"action_type": "open_record", "target_id": "minor_profile_01"},
-            {"action_type": "open_record", "target_id": "fraud_case_01"},
-            {"action_type": "open_record", "target_id": "legal_hold_01"},
-            {"action_type": "search_policy", "query": "minor guardian authority legal hold fraud retention"},
-            {
-                "action_type": "message_requester",
-                "content": (
-                    "Please verify your authority as guardian. Because of the legal hold and "
-                    "fraud review we cannot delete all data now, but we can suppress marketing immediately."
-                ),
-            },
-            {"action_type": "set_case_field", "field_name": "request_type", "field_value": "access_erasure", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "verification_status", "field_value": "verification_required", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "jurisdiction", "field_value": "coppa", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "sla_days", "field_value": 30, "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "priority", "field_value": "urgent", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "routing_queue", "field_value": "fraud_privacy_joint", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "case_status", "field_value": "escalated", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "retention_decision", "field_value": "retain_legal_hold", "confidence": 1.0},
-            {"action_type": "set_case_field", "field_name": "escalation_required", "field_value": True, "confidence": 1.0},
-            {"action_type": "add_internal_note", "content": "guardian verification; legal hold; fraud investigation; suppress marketing only"},
-            {"action_type": "draft_reply", "content": "Please verify your authority as guardian. A legal hold applies, so we cannot delete all data now."},
-            {"action_type": "request_review", "reviewer": "compliance"},
-            {"action_type": "request_review", "reviewer": "legal"},
-            {"action_type": "submit"},
-        ],
-    }
-    task_plan = plans[task_id]
+    task_plan = build_teacher_plan(task_id)
     if step <= len(task_plan):
         return task_plan[step - 1]
     return {"action_type": "submit"}
@@ -195,6 +116,9 @@ def get_model_action(
         f"Requester thread: {[turn.model_dump(mode='json') for turn in observation.requester_thread[-6:]]}\n"
         f"Revealed requester facts: {observation.revealed_requester_facts}\n"
         f"Review findings: {[finding.message for finding in observation.review_findings]}\n"
+        f"Stakeholder inbox: {[message.model_dump(mode='json') for message in observation.stakeholder_inbox[-6:]]}\n"
+        f"Milestones: {[milestone.model_dump(mode='json') for milestone in observation.milestones]}\n"
+        f"Theme alignment: {observation.theme_alignment.model_dump()}\n"
         f"Explanation trace: {observation.explanation_trace}\n"
         f"Draft reply: {observation.draft_reply}\n"
         f"Recent history: {history[-4:]}\n"
@@ -215,7 +139,7 @@ def get_model_action(
         if not text:
             raise ValueError("Empty model response")
         return extract_json(text)
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         if os.environ.get("LOG_DEBUG") == "1":
             print(f"[DEBUG] Model request failed: {exc}", flush=True)
         return fallback_policy(task_id, step)
@@ -325,7 +249,7 @@ async def run_task(client: OpenAI | None, task_id: str) -> float:
         if env is not None:
             try:
                 await env.close()
-            except Exception as exc:  # pragma: no cover
+            except Exception as exc:
                 if os.environ.get("LOG_DEBUG") == "1":
                     print(f"[DEBUG] env.close() error (container cleanup): {exc}", flush=True)
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
@@ -333,7 +257,6 @@ async def run_task(client: OpenAI | None, task_id: str) -> float:
 
 
 async def main() -> None:
-    _ = HF_TOKEN
     client: OpenAI | None = None
     if API_KEY:
         try:
@@ -343,7 +266,7 @@ async def main() -> None:
                 timeout=MODEL_TIMEOUT_SECONDS,
                 max_retries=0,
             )
-        except Exception as exc:  # pragma: no cover
+        except Exception as exc:
             if os.environ.get("LOG_DEBUG") == "1":
                 print(f"[DEBUG] openai_client_init_error: {exc}", flush=True)
             client = None
@@ -351,7 +274,7 @@ async def main() -> None:
     for task_id in TASK_ORDER:
         try:
             await run_task(client, task_id)
-        except Exception as exc:  # pragma: no cover
+        except Exception as exc:
             if os.environ.get("LOG_DEBUG") == "1":
                 print(f"[DEBUG] unhandled_task_error task={task_id} error={exc}", flush=True)
             log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
@@ -361,6 +284,6 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         if os.environ.get("LOG_DEBUG") == "1":
             print(f"[DEBUG] fatal_main_error: {exc}", flush=True)
