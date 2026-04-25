@@ -30,6 +30,39 @@ python scripts/train_trl_sft.py \
 
 This saves `sft_log_history.json` and, when matplotlib is available, `sft_loss_curve.png`.
 
+For a stronger Google Colab run, use 4-bit LoRA so you can train a bigger model:
+
+```bash
+pip install -e .[train]
+pip install bitsandbytes
+
+python scripts/train_trl_sft.py \
+  --dataset outputs/train/privacyops_x_sft.jsonl \
+  --model Qwen/Qwen3-4B \
+  --output-dir outputs/checkpoints/privacyops_x_sft_4b \
+  --use-lora \
+  --load-in-4bit \
+  --max-steps 150 \
+  --per-device-train-batch-size 1 \
+  --gradient-accumulation-steps 8 \
+  --gradient-checkpointing
+```
+
+If `Qwen/Qwen3-4B` runs out of memory on your Colab GPU, fall back to:
+
+```bash
+python scripts/train_trl_sft.py \
+  --dataset outputs/train/privacyops_x_sft.jsonl \
+  --model Qwen/Qwen3-1.7B \
+  --output-dir outputs/checkpoints/privacyops_x_sft_1_7b \
+  --use-lora \
+  --load-in-4bit \
+  --max-steps 150 \
+  --per-device-train-batch-size 1 \
+  --gradient-accumulation-steps 8 \
+  --gradient-checkpointing
+```
+
 ## 4. Evaluate the trained checkpoint
 
 ```bash
@@ -76,4 +109,10 @@ This script trains directly against the environment using TRL’s OpenEnv tool i
 
 ## Colab
 
-Use `notebooks/privacyops_x_trl_colab.ipynb` for a one-notebook version of the full flow.
+Use `notebooks/privacyops_x_trl_colab.ipynb` for a one-notebook version of the flow.
+
+Recommended Colab model choices:
+
+- Best accuracy that is still realistic on Colab: `Qwen/Qwen3-4B` with `--use-lora --load-in-4bit`
+- Safer fallback for smaller Colab GPUs: `Qwen/Qwen3-1.7B` with `--use-lora --load-in-4bit`
+- Lowest-risk smoke test: `Qwen/Qwen3-0.6B`

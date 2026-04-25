@@ -346,7 +346,7 @@ It logs strictly in the required format:
 PrivacyOps-X now includes a full judge-facing pipeline:
 
 - `scripts/generate_sft_dataset.py` exports teacher trajectories as conversational SFT data
-- `scripts/train_trl_sft.py` fine-tunes a small model with Hugging Face TRL
+- `scripts/train_trl_sft.py` supports both standard SFT and Colab-friendly 4-bit LoRA training with Hugging Face TRL
 - `scripts/train_openenv_grpo.py` trains directly against the environment with OpenEnv tool calls
 - `scripts/evaluate_policies.py` compares `random`, `teacher`, and trained checkpoints
 - `scripts/plot_eval_results.py` turns eval JSON files into a readable comparison plot
