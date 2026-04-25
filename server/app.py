@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.routing import APIRoute
 from starlette.responses import Response
 from pydantic import BaseModel
@@ -865,10 +865,503 @@ def dashboard() -> str:
     """
 
 
-@app.get("/playground", include_in_schema=False)
-@app.get("/playground/", include_in_schema=False)
-def playground_alias() -> RedirectResponse:
-    return RedirectResponse(url="/web", status_code=307)
+@app.get("/playground", include_in_schema=False, response_class=HTMLResponse)
+@app.get("/playground/", include_in_schema=False, response_class=HTMLResponse)
+@app.get("/web", include_in_schema=False, response_class=HTMLResponse)
+@app.get("/web/", include_in_schema=False, response_class=HTMLResponse)
+def playground() -> str:
+    return """
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>PrivacyOps-X Playground</title>
+        <style>
+          :root {
+            --page: #08131c;
+            --panel: #0f1c27;
+            --panel-soft: #132331;
+            --field: #0a141d;
+            --line: #21384a;
+            --ink: #edf4f8;
+            --muted: #9fb0bd;
+            --accent: #56d3c5;
+            --accent-ink: #072028;
+            --danger-soft: rgba(255, 143, 135, 0.10);
+            --ok-soft: rgba(86, 211, 197, 0.12);
+            --radius: 18px;
+          }
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            background: var(--page);
+            color: var(--ink);
+            font: 16px/1.5 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          }
+          a { color: inherit; }
+          .shell {
+            width: min(1380px, calc(100vw - 32px));
+            margin: 0 auto;
+            padding: 28px 0 40px;
+          }
+          .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: end;
+            margin-bottom: 18px;
+          }
+          .brand {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+          }
+          .logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: #163041;
+            color: var(--accent);
+            font-weight: 800;
+            letter-spacing: 0.06em;
+          }
+          .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid #244354;
+            background: #10202c;
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+          h1 {
+            margin: 10px 0 6px;
+            font-size: clamp(2rem, 4vw, 3rem);
+            line-height: 1.05;
+            font-family: Georgia, "Times New Roman", serif;
+          }
+          .subtitle {
+            margin: 0;
+            max-width: 760px;
+            color: var(--muted);
+          }
+          .top-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+          }
+          .button,
+          .chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--panel-soft);
+            color: var(--ink);
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+          }
+          .button.primary {
+            background: var(--accent);
+            color: var(--accent-ink);
+            border-color: transparent;
+          }
+          .layout {
+            display: grid;
+            grid-template-columns: 420px minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+          }
+          .stack {
+            display: grid;
+            gap: 18px;
+          }
+          .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 20px;
+          }
+          .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+          .section-head p,
+          .muted,
+          .helper {
+            margin: 0;
+            color: var(--muted);
+          }
+          .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid #285050;
+            background: var(--ok-soft);
+            color: var(--accent);
+            font-weight: 700;
+            white-space: nowrap;
+          }
+          .field {
+            margin-bottom: 14px;
+          }
+          label {
+            display: block;
+            margin-bottom: 8px;
+            color: #dce8ef;
+            font-size: 0.9rem;
+            font-weight: 700;
+          }
+          input,
+          select,
+          textarea {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--field);
+            color: var(--ink);
+            padding: 12px 14px;
+            font: inherit;
+          }
+          textarea {
+            min-height: 260px;
+            resize: vertical;
+            font-family: Consolas, "Courier New", monospace;
+            line-height: 1.55;
+          }
+          .inline-fields {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px;
+            gap: 12px;
+          }
+          .button-row,
+          .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+          .response {
+            display: grid;
+            gap: 16px;
+          }
+          pre {
+            margin: 0;
+            min-height: 520px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: var(--field);
+            color: #dcebf4;
+            padding: 18px;
+            font: 0.95rem/1.6 Consolas, "Courier New", monospace;
+          }
+          .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+          }
+          .mini {
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: var(--panel-soft);
+            padding: 14px;
+          }
+          .mini strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #dce8ef;
+            font-size: 0.82rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+          }
+          .mini code {
+            color: #d5f7f1;
+          }
+          .inline-link {
+            color: #cfeef5;
+            text-decoration: none;
+            border-bottom: 1px dotted #527387;
+          }
+          .kicker {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 18px;
+          }
+          .tip-box {
+            border-left: 3px solid var(--accent);
+            background: #0e1b26;
+            border-radius: 14px;
+            padding: 14px 16px;
+          }
+          @media (max-width: 1080px) {
+            .hero,
+            .layout,
+            .mini-grid {
+              grid-template-columns: 1fr;
+            }
+            .top-actions {
+              justify-content: flex-start;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="shell">
+          <section class="hero">
+            <div class="brand">
+              <div class="logo">PX</div>
+              <div>
+                <div class="eyebrow">Interactive Playground</div>
+                <h1>PrivacyOps-X</h1>
+                <p class="subtitle">
+                  Use this page to run real benchmark episodes against the live environment.
+                  Reset a case, inspect the observation, send a typed action, and watch the
+                  exact response that the evaluator sees.
+                </p>
+              </div>
+            </div>
+            <div class="top-actions">
+              <a class="button" href="/">Home</a>
+              <a class="button" href="/dashboard">Judge Dashboard</a>
+              <a class="button" href="/docs">API Docs</a>
+              <a class="button" href="/schema">Schema</a>
+            </div>
+          </section>
+
+          <div class="layout">
+            <div class="stack">
+              <section class="card">
+                <div class="section-head">
+                  <div>
+                    <h2>Episode control</h2>
+                    <p class="muted">Choose a task, set the seed, then call <code>/reset</code>.</p>
+                  </div>
+                  <div id="status" class="status">Ready</div>
+                </div>
+
+                <div class="field">
+                  <label for="task-id">Task</label>
+                  <select id="task-id">
+                    <option value="easy_verified_access_with_injection">Easy - verified access with prompt injection</option>
+                    <option value="medium_unverified_erasure_multi_account">Medium - multi-account erasure with billing retention</option>
+                    <option value="hard_guardian_minor_legal_hold_fraud">Hard - guardian request under legal hold and fraud</option>
+                    <option value="finale_cross_border_recovery_cascade">Finale - cross-border recovery cascade</option>
+                  </select>
+                </div>
+
+                <div class="inline-fields">
+                  <div class="field">
+                    <label for="seed">Seed</label>
+                    <input id="seed" type="number" value="0" min="0">
+                  </div>
+                  <div class="field">
+                    <label for="pretty">Pretty</label>
+                    <select id="pretty">
+                      <option value="1">On</option>
+                      <option value="0">Off</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="button-row">
+                  <button class="button primary" type="button" onclick="resetEnv()">Reset episode</button>
+                  <button class="button" type="button" onclick="loadHealth()">Health</button>
+                  <button class="button" type="button" onclick="loadSchema()">Schema</button>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="section-head">
+                  <div>
+                    <h2>Action JSON</h2>
+                    <p class="muted">Paste only the action body. The page wraps it as <code>{"action": ...}</code>.</p>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label for="action-json">Next action</label>
+                  <textarea id="action-json">{
+  "action_type": "inspect_case"
+}</textarea>
+                </div>
+
+                <div class="chip-row">
+                  <button class="chip" type="button" onclick="setAction('inspect_case')">Inspect case</button>
+                  <button class="chip" type="button" onclick="setAction('open_record', { target_id: 'core_profile' })">Open record</button>
+                  <button class="chip" type="button" onclick="setAction('search_policy', { query: 'legal hold retention deletion' })">Search policy</button>
+                  <button class="chip" type="button" onclick="setAction('self_review')">Self review</button>
+                  <button class="chip" type="button" onclick="setAction('submit')">Submit</button>
+                </div>
+
+                <div class="button-row" style="margin-top:12px;">
+                  <button class="button primary" type="button" onclick="runStep()">Send step</button>
+                </div>
+              </section>
+            </div>
+
+            <section class="card response">
+              <div class="section-head">
+                <div>
+                  <h2>Live response</h2>
+                  <p class="muted">Every request and response stays visible here so judges can see the exact environment behavior.</p>
+                </div>
+              </div>
+
+              <div class="kicker">
+                <div class="tip-box">
+                  Start with <code>inspect_case</code>, then open records and policy before sending requester or reviewer actions.
+                </div>
+              </div>
+
+              <pre id="output">Press "Reset episode" to begin.</pre>
+
+              <div class="mini-grid">
+                <div class="mini">
+                  <strong>Suggested flow</strong>
+                  Reset -> inspect -> open records -> search policy -> review -> submit
+                </div>
+                <div class="mini">
+                  <strong>Useful links</strong>
+                  <a class="inline-link" href="/envinfo">/envinfo</a><br>
+                  <a class="inline-link" href="/judge-report">/judge-report</a><br>
+                  <a class="inline-link" href="/curriculum">/curriculum</a>
+                </div>
+                <div class="mini">
+                  <strong>Common actions</strong>
+                  <code>inspect_case</code><br>
+                  <code>open_record</code><br>
+                  <code>request_review</code>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <script>
+          const output = document.getElementById("output");
+          const statusChip = document.getElementById("status");
+
+          function setStatus(text, kind = "ok") {
+            statusChip.textContent = text;
+            if (kind === "error") {
+              statusChip.style.color = "#ffd4cf";
+              statusChip.style.borderColor = "#5d3330";
+              statusChip.style.background = "var(--danger-soft)";
+              return;
+            }
+            statusChip.style.color = "var(--accent)";
+            statusChip.style.borderColor = "#285050";
+            statusChip.style.background = "var(--ok-soft)";
+          }
+
+          function prettyEnabled() {
+            return document.getElementById("pretty").value === "1";
+          }
+
+          function render(title, payload) {
+            output.textContent = title + "\n\n" + JSON.stringify(payload, null, 2);
+          }
+
+          async function request(path, options = {}) {
+            const url = prettyEnabled() ? path + (path.includes("?") ? "&pretty=1" : "?pretty=1") : path;
+            const response = await fetch(url, options);
+            const text = await response.text();
+            let body;
+            try {
+              body = JSON.parse(text);
+            } catch {
+              body = text;
+            }
+            if (!response.ok) {
+              throw new Error(typeof body === "string" ? body : JSON.stringify(body, null, 2));
+            }
+            return body;
+          }
+
+          async function resetEnv() {
+            try {
+              setStatus("Resetting...");
+              const taskId = document.getElementById("task-id").value;
+              const seed = Number(document.getElementById("seed").value || 0);
+              const body = await request("/reset", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task_id: taskId, seed })
+              });
+              render("POST /reset", body);
+              setStatus("Episode ready");
+            } catch (error) {
+              render("Reset failed", { error: String(error) });
+              setStatus("Reset failed", "error");
+            }
+          }
+
+          async function runStep() {
+            try {
+              setStatus("Running step...");
+              const action = JSON.parse(document.getElementById("action-json").value);
+              const body = await request("/step", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action })
+              });
+              render("POST /step", body);
+              setStatus(body.done ? "Episode finished" : "Step accepted");
+            } catch (error) {
+              render("Step failed", { error: String(error) });
+              setStatus("Step failed", "error");
+            }
+          }
+
+          async function loadSchema() {
+            try {
+              setStatus("Loading schema...");
+              const body = await request("/schema");
+              render("GET /schema", body);
+              setStatus("Schema loaded");
+            } catch (error) {
+              render("Schema failed", { error: String(error) });
+              setStatus("Schema failed", "error");
+            }
+          }
+
+          async function loadHealth() {
+            try {
+              setStatus("Checking health...");
+              const body = await request("/healthz");
+              render("GET /healthz", body);
+              setStatus("Healthy");
+            } catch (error) {
+              render("Health check failed", { error: String(error) });
+              setStatus("Health failed", "error");
+            }
+          }
+
+          function setAction(actionType, extras = {}) {
+            document.getElementById("action-json").value = JSON.stringify({ action_type: actionType, ...extras }, null, 2);
+          }
+        </script>
+      </body>
+    </html>
+    """
 
 
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
@@ -882,296 +1375,239 @@ def index() -> str:
         <title>PrivacyOps-X</title>
         <style>
           :root {
-            --bg: #07131f;
-            --panel: rgba(7, 18, 29, 0.88);
-            --panel-soft: rgba(17, 35, 52, 0.84);
+            --bg: #08131d;
+            --panel: #0f1d2a;
+            --panel-soft: #132536;
+            --panel-2: #0c1723;
             --ink: #eef4f8;
-            --muted: #a6b8c7;
-            --line: rgba(132, 171, 196, 0.22);
-            --teal: #72e6d1;
-            --amber: #ffbf70;
-            --rose: #ff8a80;
-            --blue: #7db8ff;
-            --shadow: 0 30px 90px rgba(0, 0, 0, 0.34);
+            --muted: #9ab0c4;
+            --line: #22384d;
+            --accent: #4fd1c5;
+            --accent-2: #8ae4dc;
+            --warning: #ffbf70;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
           }
+          * { box-sizing: border-box; }
           body {
             margin: 0;
-            min-height: 100vh;
+            background: linear-gradient(180deg, #09131d 0%, #0a1622 100%);
             color: var(--ink);
-            background:
-              radial-gradient(circle at top left, rgba(114, 230, 209, 0.18), transparent 32%),
-              radial-gradient(circle at 88% 14%, rgba(255, 191, 112, 0.16), transparent 24%),
-              linear-gradient(160deg, #051019 0%, #081827 44%, #102338 100%);
-            font-family: "Trebuchet MS", "Lucida Sans Unicode", sans-serif;
+            font: 16px/1.55 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           }
-          * {
-            box-sizing: border-box;
-          }
-          .shell {
-            width: min(1180px, calc(100vw - 32px));
+          .page {
+            width: min(1360px, calc(100vw - 32px));
             margin: 0 auto;
-            padding: 28px 0 48px;
+            padding: 28px 0 44px;
           }
-          .masthead {
+          .topbar {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
             gap: 16px;
-            margin-bottom: 26px;
+            margin-bottom: 18px;
           }
           .brand {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
           }
-          .brand-mark {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+          .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
             display: grid;
             place-items: center;
-            background:
-              linear-gradient(135deg, rgba(114, 230, 209, 0.28), rgba(125, 184, 255, 0.18)),
-              rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(125, 184, 255, 0.18);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            font-size: 20px;
+            background: #173044;
+            color: var(--accent-2);
+            font-weight: 800;
+            letter-spacing: 0.06em;
           }
-          .brand h1 {
-            margin: 0;
+          h1, h2, h3 { margin: 0; }
+          h1 {
+            font-size: clamp(2.2rem, 4vw, 3.4rem);
             font-family: Georgia, "Times New Roman", serif;
-            font-size: clamp(2rem, 4vw, 3rem);
-            letter-spacing: 0.02em;
           }
           .eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 999px;
-            background: rgba(114, 230, 209, 0.08);
-            border: 1px solid rgba(114, 230, 209, 0.18);
-            color: var(--teal);
-            font-size: 0.83rem;
+            border: 1px solid #244357;
+            color: var(--accent-2);
+            background: rgba(79, 209, 197, 0.08);
             text-transform: uppercase;
             letter-spacing: 0.12em;
+            font-size: 0.75rem;
+            font-weight: 700;
           }
           .hero {
-            position: relative;
-            overflow: hidden;
-            padding: 34px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.95fr);
+            gap: 20px;
+            padding: 28px;
+            border-radius: 24px;
             border: 1px solid var(--line);
-            border-radius: 30px;
-            background:
-              linear-gradient(145deg, rgba(13, 29, 43, 0.96), rgba(9, 21, 33, 0.9)),
-              var(--panel);
+            background: var(--panel);
             box-shadow: var(--shadow);
           }
-          .hero::after {
-            content: "";
-            position: absolute;
-            inset: auto -90px -120px auto;
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(125, 184, 255, 0.2), transparent 68%);
-            pointer-events: none;
-          }
-          .hero-grid {
-            display: grid;
-            grid-template-columns: 1.4fr 0.9fr;
-            gap: 28px;
-            align-items: start;
+          .hero-copy p,
+          .muted {
+            color: var(--muted);
+            margin: 0;
           }
           .hero-copy p {
-            margin: 14px 0 0;
-            color: var(--muted);
-            font-size: 1.06rem;
-            line-height: 1.72;
-            max-width: 64ch;
+            margin-top: 14px;
+            max-width: 62ch;
+            font-size: 1.05rem;
           }
           .actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 24px;
+            gap: 10px;
+            margin-top: 22px;
           }
           .button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 13px 18px;
-            border-radius: 14px;
-            border: 1px solid transparent;
+            min-height: 46px;
+            padding: 10px 16px;
+            border-radius: 12px;
             text-decoration: none;
             font-weight: 700;
-            transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-          }
-          .button:hover {
-            transform: translateY(-1px);
-          }
-          .button-primary {
-            color: #04111d;
-            background: linear-gradient(135deg, var(--teal), #95f4e4);
-          }
-          .button-secondary {
+            border: 1px solid #2a465d;
+            background: #10202d;
             color: var(--ink);
-            background: rgba(255, 255, 255, 0.03);
-            border-color: rgba(255, 255, 255, 0.14);
           }
-          .hero-panel {
-            padding: 18px;
-            border-radius: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: var(--panel-soft);
+          .button.primary {
+            background: var(--accent);
+            color: #08212a;
+            border-color: transparent;
           }
-          .hero-panel h2 {
-            margin: 0 0 12px;
-            font-size: 1rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--amber);
-          }
-          .hero-panel ul {
-            margin: 0;
-            padding-left: 18px;
-            color: var(--muted);
-            line-height: 1.7;
-          }
-          .grid {
+          .aside {
             display: grid;
-            gap: 18px;
-            margin-top: 24px;
+            gap: 14px;
           }
-          .stats {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-          }
+          .mini-panel,
           .card {
-            padding: 20px;
-            border-radius: 22px;
+            border-radius: 18px;
             border: 1px solid var(--line);
-            background: rgba(9, 21, 34, 0.82);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            background: var(--panel-soft);
+            padding: 18px;
           }
-          .stat-label {
-            color: var(--muted);
+          .mini-panel h2,
+          .section-title {
             font-size: 0.82rem;
             text-transform: uppercase;
             letter-spacing: 0.12em;
+            color: var(--warning);
+            margin-bottom: 10px;
           }
-          .stat-value {
-            margin-top: 8px;
-            font-size: clamp(1.6rem, 3vw, 2.3rem);
+          .mini-panel ul {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--muted);
+          }
+          .mini-panel li { margin-bottom: 8px; }
+          .stats,
+          .link-grid,
+          .case-grid,
+          .verify-grid {
+            display: grid;
+            gap: 16px;
+            margin-top: 18px;
+          }
+          .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .link-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .verify-grid { grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); }
+          .stat strong,
+          .link-card h3,
+          .case-card h3 {
+            display: block;
+            margin-bottom: 8px;
+          }
+          .stat strong {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+          }
+          .stat .value {
+            font-size: 2rem;
             font-weight: 800;
           }
-          .stat-value small {
-            display: block;
-            margin-top: 6px;
-            font-size: 0.92rem;
+          .stat .sub {
             color: var(--muted);
-            font-weight: 600;
+            margin-top: 6px;
           }
           .section-title {
-            margin: 34px 0 14px;
-            font-size: 0.92rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--amber);
+            margin-top: 28px;
           }
-          .cases {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+          .link-card a,
+          .case-card a,
+          a.inline-link {
+            color: var(--accent-2);
+            text-decoration: none;
           }
-          .case-card h3 {
-            margin: 10px 0 10px;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 1.35rem;
-          }
+          .link-card p,
           .case-card p {
             margin: 0;
             color: var(--muted);
-            line-height: 1.65;
           }
           .tag {
             display: inline-flex;
-            align-items: center;
-            padding: 5px 10px;
+            padding: 4px 10px;
             border-radius: 999px;
-            background: rgba(125, 184, 255, 0.1);
-            color: var(--blue);
-            font-size: 0.78rem;
+            background: rgba(138, 228, 220, 0.08);
+            border: 1px solid #244357;
+            color: var(--accent-2);
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
           }
-          .code-grid {
-            grid-template-columns: 1.05fr 0.95fr;
-          }
-          .terminal {
+          pre {
             margin: 0;
             padding: 18px;
-            overflow-x: auto;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: #04111d;
-            color: #d5e6f8;
-            font: 0.95rem/1.6 "Consolas", "Courier New", monospace;
+            border-radius: 16px;
+            border: 1px solid #20384c;
+            background: #09131d;
+            color: #dceaf5;
+            overflow: auto;
+            font: 0.95rem/1.6 Consolas, "Courier New", monospace;
           }
-          .list {
+          ul.clean {
             margin: 0;
             padding-left: 18px;
-            color: var(--ink);
-            line-height: 1.85;
-            font-size: 1rem;
-            font-weight: 600;
-          }
-          .list li {
-            margin-bottom: 8px;
-          }
-          .list a {
-            color: var(--teal);
-            text-decoration: underline;
-            text-underline-offset: 3px;
-          }
-          .list a:hover {
-            color: #b7fff2;
-          }
-          .footer {
-            margin-top: 28px;
             color: var(--muted);
-            font-size: 0.92rem;
           }
-          a {
-            color: inherit;
-          }
+          ul.clean li { margin-bottom: 8px; }
           code {
             padding: 2px 6px;
             border-radius: 7px;
-            background: rgba(125, 184, 255, 0.08);
-            color: #cfe6ff;
+            background: rgba(138, 228, 220, 0.08);
+            color: #d7f7f1;
           }
-          @media (max-width: 980px) {
-            .hero-grid,
+          @media (max-width: 1080px) {
+            .hero,
             .stats,
-            .cases,
-            .code-grid {
+            .link-grid,
+            .case-grid,
+            .verify-grid {
               grid-template-columns: 1fr;
             }
-            .shell {
-              width: min(100vw - 22px, 1180px);
-            }
-            .hero {
-              padding: 24px;
-              border-radius: 24px;
+            .page {
+              width: min(100vw - 20px, 1360px);
             }
           }
         </style>
       </head>
       <body>
-        <div class="shell">
-          <div class="masthead">
+        <div class="page">
+          <div class="topbar">
             <div class="brand">
-              <div class="brand-mark">PX</div>
+              <div class="logo">PX</div>
               <div>
                 <div class="eyebrow">OpenEnv benchmark</div>
                 <h1>PrivacyOps-X</h1>
@@ -1180,130 +1616,126 @@ def index() -> str:
           </div>
 
           <section class="hero">
-            <div class="hero-grid">
-              <div class="hero-copy">
-                <div class="eyebrow">Safety-critical privacy operations</div>
-                <p>
-                  PrivacyOps-X evaluates whether an agent can handle real privacy
-                  rights workflows under verification, retention, legal hold,
-                  fraud, and audit constraints. It is built for benchmark-grade
-                  scoring rather than toy interaction.
-                </p>
-                <div class="actions">
-                  <a class="button button-primary" href="/web">Open Playground</a>
-                  <a class="button button-secondary" href="/dashboard">Judge Dashboard</a>
-                  <a class="button button-secondary" href="/docs">API Docs</a>
-                  <a class="button button-secondary" href="/schema">Typed Schema</a>
-                  <a class="button button-secondary" href="/demo">Demo</a>
-                  <a class="button button-secondary" href="/openapi.json">OpenAPI</a>
-                </div>
+            <div class="hero-copy">
+              <div class="eyebrow">Safety-critical privacy operations</div>
+              <p>
+                PrivacyOps-X trains and evaluates agents on real privacy-rights workflows:
+                identity checks, deletion constraints, legal hold, fraud review, requester
+                messaging, and final case submission under measurable reward.
+              </p>
+              <div class="actions">
+                <a class="button primary" href="/playground">Open Playground</a>
+                <a class="button" href="/dashboard">Judge Dashboard</a>
+                <a class="button" href="/docs">API Docs</a>
+                <a class="button" href="/judge-report">Judge Report</a>
+                <a class="button" href="/schema">Typed Schema</a>
+                <a class="button" href="/curriculum">Curriculum</a>
               </div>
-              <aside class="hero-panel">
+            </div>
+            <div class="aside">
+              <div class="mini-panel">
                 <h2>What judges can verify</h2>
                 <ul>
                   <li>Typed <code>reset</code>, <code>step</code>, and <code>state</code> endpoints</li>
                   <li>Deterministic compliance, legal, and audit reviewers</li>
                   <li>Multi-turn requester interaction with revealed facts</li>
-                  <li>Dense rewards plus final benchmark breakdowns</li>
+                  <li>Dense rewards with benchmark-grade final scoring</li>
                 </ul>
-              </aside>
+              </div>
+              <div class="mini-panel">
+                <h2>Best demo flow</h2>
+                <ul>
+                  <li>Start in <a class="inline-link" href="/playground">/playground</a></li>
+                  <li>Reset the medium or hard task</li>
+                  <li>Run <code>inspect_case</code> first</li>
+                  <li>Show dashboard and API docs after one step</li>
+                </ul>
+              </div>
             </div>
           </section>
 
-          <section class="grid stats">
-            <article class="card">
-              <div class="stat-label">Scenarios</div>
-              <div class="stat-value">3<small>easy, medium, hard</small></div>
+          <section class="stats">
+            <article class="card stat">
+              <strong>Scenarios</strong>
+              <div class="value">4</div>
+              <div class="sub">easy, medium, hard, finale</div>
             </article>
-            <article class="card">
-              <div class="stat-label">Reviewers</div>
-              <div class="stat-value">3<small>compliance, legal, audit</small></div>
+            <article class="card stat">
+              <strong>Reviewers</strong>
+              <div class="value">3</div>
+              <div class="sub">compliance, legal, audit</div>
             </article>
-            <article class="card">
-              <div class="stat-label">Self-improvement</div>
-              <div class="stat-value">0.95<small>from 0.61 on the finale task</small></div>
+            <article class="card stat">
+              <strong>Self-improvement</strong>
+              <div class="value">0.95</div>
+              <div class="sub">from 0.61 on the finale task</div>
             </article>
-            <article class="card">
-              <div class="stat-label">Deployment</div>
-              <div class="stat-value">HF Space<small>dockerized and OpenEnv-valid</small></div>
+            <article class="card stat">
+              <strong>Deployment</strong>
+              <div class="value">HF Space</div>
+              <div class="sub">Dockerized + OpenEnv-compatible</div>
             </article>
           </section>
 
-          <div class="section-title">Judges quick links</div>
-          <section class="grid">
-            <article class="card">
-              <ul class="list">
-                <li><a href="/web">/web</a> interactive playground</li>
-                <li><a href="/docs">/docs</a> Swagger UI</li>
-                <li><a href="/schema">/schema</a> typed contracts</li>
-                <li><a href="/demo">/demo</a> sample trajectory</li>
-                <li><a href="/envinfo">/envinfo</a> evaluation metadata</li>
-                <li><a href="/healthz">/healthz</a> detailed health</li>
-              </ul>
+          <div class="section-title">Quick links</div>
+          <section class="link-grid">
+            <article class="card link-card">
+              <h3><a href="/playground">Interactive playground</a></h3>
+              <p>Reset episodes, send actions, and inspect raw JSON responses live.</p>
+            </article>
+            <article class="card link-card">
+              <h3><a href="/dashboard">Judge dashboard</a></h3>
+              <p>See baseline, oracle, self-improvement, and judge-facing benchmark context.</p>
+            </article>
+            <article class="card link-card">
+              <h3><a href="/docs">Swagger + schema</a></h3>
+              <p>Inspect the typed OpenAPI surface and model contracts without guessing.</p>
             </article>
           </section>
 
           <div class="section-title">Benchmark cases</div>
-          <section class="grid cases">
+          <section class="case-grid">
             <article class="card case-card">
               <span class="tag">Easy</span>
               <h3>Verified access with prompt injection</h3>
-              <p>
-                A California customer requests a data copy from the matched account
-                email while trying to coerce the analyst into bypassing policy.
-              </p>
+              <p>A matched requester asks for access while trying to pressure the analyst into unsafe handling.</p>
             </article>
             <article class="card case-card">
               <span class="tag">Medium</span>
               <h3>Multi-account erasure with billing retention</h3>
-              <p>
-                A GDPR deletion request arrives from a mismatched sender and
-                references two accounts, one of which carries statutory invoice
-                retention obligations.
-              </p>
+              <p>A GDPR deletion request arrives from a mismatched sender and conflicts with invoice retention rules.</p>
             </article>
             <article class="card case-card">
-              <span class="tag">Hard</span>
-              <h3>Guardian request under legal hold and fraud review</h3>
-              <p>
-                A parent seeks access plus deletion for a minor account that is
-                entangled with active fraud review and a legal hold.
-              </p>
+              <span class="tag">Hard + Finale</span>
+              <h3>Guardian, legal hold, fraud, and cross-border conflict</h3>
+              <p>High-risk workflows force the agent to balance authority, fraud review, retention, and partial fulfillment.</p>
             </article>
           </section>
 
           <div class="section-title">Quick verification</div>
-          <section class="grid code-grid">
+          <section class="verify-grid">
             <article class="card">
-              <pre class="terminal">curl -X POST /reset
+              <pre>curl -X POST /reset
 
-curl -X POST /reset \
-  -H "Content-Type: application/json" \
+curl -X POST /reset \\
+  -H "Content-Type: application/json" \\
   -d '{"task_id":"medium_unverified_erasure_multi_account","seed":0}'
 
-curl -X POST /step \
-  -H "Content-Type: application/json" \
-  -d '{"action":{"action_type":"message_requester","content":"Please verify your identity and confirm which account emails are in scope."}}'</pre>
+curl -X POST /step \\
+  -H "Content-Type: application/json" \\
+  -d '{"action":{"action_type":"inspect_case"}}'</pre>
             </article>
             <article class="card">
-              <ul class="list">
-                <li><a href="/health">/health</a> confirms runtime readiness</li>
-                <li><a href="/metadata">/metadata</a> exposes environment identity</li>
-                <li><a href="/schema">/schema</a> publishes typed action, observation, and state contracts</li>
-                <li><a href="/demo">/demo</a> shows a sample trajectory and score</li>
-                <li><a href="/envinfo">/envinfo</a> provides judge-friendly metadata</li>
-                <li><a href="/healthz">/healthz</a> returns detailed health info</li>
-                <li><a href="/web">/web</a> opens the interactive OpenEnv playground</li>
-                <li><a href="/docs">/docs</a> provides the FastAPI reference surface</li>
+              <ul class="clean">
+                <li><a class="inline-link" href="/health">/health</a> confirms runtime readiness</li>
+                <li><a class="inline-link" href="/metadata">/metadata</a> exposes environment identity</li>
+                <li><a class="inline-link" href="/envinfo">/envinfo</a> provides judge-friendly metadata</li>
+                <li><a class="inline-link" href="/healthz">/healthz</a> returns detailed health info</li>
+                <li><a class="inline-link" href="/playground">/playground</a> opens the built-in interactive UI</li>
+                <li><a class="inline-link" href="/docs">/docs</a> provides the FastAPI reference surface</li>
               </ul>
             </article>
           </section>
-
-          <div class="footer">
-            Designed for reproducible privacy-rights evaluation with deterministic
-            reviewer engines, multi-turn requester interaction, and benchmark-grade
-            final scoring.
-          </div>
         </div>
       </body>
     </html>

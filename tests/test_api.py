@@ -16,6 +16,21 @@ def test_root_endpoint_renders_homepage() -> None:
     assert "Verified access with prompt injection" in response.text
 
 
+def test_playground_endpoint_renders_ui() -> None:
+    response = client.get("/playground")
+    assert response.status_code == 200
+    assert "Episode control" in response.text
+    assert "Action JSON" in response.text
+    assert "Reset episode" in response.text
+
+
+def test_web_alias_renders_playground_ui() -> None:
+    response = client.get("/web")
+    assert response.status_code == 200
+    assert "Episode control" in response.text
+    assert "Live response" in response.text
+
+
 def test_reset_endpoint_responds() -> None:
     response = client.post("/reset", json={"task_id": "easy_verified_access_with_injection"})
     assert response.status_code == 200
