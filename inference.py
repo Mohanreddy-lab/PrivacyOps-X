@@ -75,16 +75,12 @@ def extract_json(text: str) -> dict[str, Any]:
 
 def fallback_policy(task_id: str, step: int) -> dict[str, Any]:
     task_plan = build_teacher_plan(task_id)
-    if step <= len(task_plan):
-        return task_plan[step - 1]
-    return {"action_type": "submit"}
+    return task_plan[step - 1] if step <= len(task_plan) else {"action_type": "submit"}
 
 
 def _to_error_code(exc: Exception) -> str:
     name = exc.__class__.__name__.strip().lower()
-    if not name:
-        return "runtime_error"
-    return name
+    return name or "runtime_error"
 
 
 def _strict_unit_score(value: float) -> float:

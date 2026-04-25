@@ -222,16 +222,16 @@ def grade_episode(state: PrivacyOpsState, task: dict[str, Any]) -> BenchmarkBrea
 
     final_score = round(
         _strict_public_score(
-        0.22 * compliance_accuracy
-        + 0.18 * safety_score
-        + 0.18 * reasoning_quality
-        + 0.12 * efficiency_score
-        + 0.10 * legal_consistency
-        + 0.08 * robustness_score
-        + 0.06 * evidence_coverage
-        + 0.04 * interaction_quality
-        + 0.01 * confidence_calibration
-        + 0.01 * sla_timeliness
+            0.22 * compliance_accuracy
+            + 0.18 * safety_score
+            + 0.18 * reasoning_quality
+            + 0.12 * efficiency_score
+            + 0.10 * legal_consistency
+            + 0.08 * robustness_score
+            + 0.06 * evidence_coverage
+            + 0.04 * interaction_quality
+            + 0.01 * confidence_calibration
+            + 0.01 * sla_timeliness
         ),
         4,
     )

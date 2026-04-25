@@ -67,14 +67,14 @@ SLA_DAYS_BY_JURISDICTION = {"gdpr": 30, "cpra": 45, "coppa": 30, "other": 30, "u
 SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
 
-def _resolve_sla_window(task: dict[str, Any], difficulty: str) -> int:
+def _resolve_sla_window(task: dict[str, Any]) -> int:
     step_limit = int(task["step_limit"])
     optimal_steps = int(task.get("optimal_steps", 0))
     expected = task["expected_workspace"]
     sla_days = int(expected.get("sla_days") or SLA_DAYS_BY_JURISDICTION.get(expected.get("jurisdiction", "unknown"), 30))
     if sla_days <= 30:
         base = max(8, min(step_limit, 10))
-    if sla_days <= 45:
+    elif sla_days <= 45:
         base = max(10, min(step_limit, 12))
     else:
         base = max(10, min(step_limit, 12))
@@ -201,7 +201,7 @@ class PrivacyOpsXEnvironment(
             episode_id=episode_id or str(uuid4()),
             seed=seed,
         )
-        sla_window = _resolve_sla_window(task, task["difficulty"])
+        sla_window = _resolve_sla_window(task)
         self._state.sla_window_steps = sla_window
         self._state.sla_deadline = sla_window
         self._state.urgency_level = _urgency_from_deadline(sla_window, sla_window)
@@ -1112,9 +1112,7 @@ class PrivacyOpsXEnvironment(
                 severity=finding.severity,
                 related_codes=[finding.code],
             )
-        redundant = not issues and any(
-            finding.code == "SELF_OK" for finding in findings
-        )
+        redundant = not issues
         if issues:
             append_trace_tag(self._state, "self_review_inconsistency_found")
             self._pending_self_review_issues = set(issues.keys())
