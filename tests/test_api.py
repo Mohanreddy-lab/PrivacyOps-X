@@ -96,7 +96,7 @@ def test_dashboard_uses_fallback_content_when_artifacts_are_missing(monkeypatch)
 def test_malformed_json_payload_is_rejected() -> None:
     response = client.post(
         "/reset",
-        data='{"task_id":',
+        content='{"task_id":',
         headers={"content-type": "application/json", "x-forwarded-for": "203.0.113.10"},
     )
     assert response.status_code == 400
