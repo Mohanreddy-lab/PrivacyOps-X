@@ -11,6 +11,7 @@ from collections import defaultdict, deque
 from html import escape
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -53,6 +54,53 @@ DASHBOARD_FALLBACK_SCORES = {
     "baseline_score": 0.6087,
     "improved_score": 0.9519,
 }
+DASHBOARD_FALLBACK_BEFORE = [
+    {"action_type": "inspect_case"},
+    {"action_type": "set_case_field", "field_name": "request_type", "field_value": "access_erasure"},
+    {"action_type": "set_case_field", "field_name": "verification_status", "field_value": "verification_required"},
+    {"action_type": "set_case_field", "field_name": "jurisdiction", "field_value": "gdpr"},
+    {"action_type": "set_case_field", "field_name": "sla_days", "field_value": 30},
+    {"action_type": "set_case_field", "field_name": "priority", "field_value": "urgent"},
+    {
+        "action_type": "draft_reply",
+        "content": "Please verify your authority. We cannot delete all data now, but we can provide eligible data through partial fulfillment once verification is complete.",
+    },
+    {"action_type": "submit"},
+]
+DASHBOARD_FALLBACK_AFTER = [
+    {"action_type": "inspect_case"},
+    {"action_type": "open_record", "target_id": "acct_eu_recovery_primary"},
+    {"action_type": "open_record", "target_id": "bill_eu_contractor_archive"},
+    {"action_type": "open_record", "target_id": "minor_profile_02"},
+    {"action_type": "open_record", "target_id": "fraud_case_02"},
+    {"action_type": "open_record", "target_id": "legal_hold_02"},
+    {"action_type": "search_policy", "query": "guardian legal hold partial fulfillment linked records"},
+    {
+        "action_type": "message_requester",
+        "content": "Please verify your authority as guardian and confirm which linked account aliases are in scope. Because of the legal hold, fraud review, and retained billing artifacts, we cannot delete all data now but we can provide eligible data through partial fulfillment.",
+    },
+    {"action_type": "set_case_field", "field_name": "request_type", "field_value": "access_erasure"},
+    {"action_type": "set_case_field", "field_name": "verification_status", "field_value": "verification_required"},
+    {"action_type": "set_case_field", "field_name": "jurisdiction", "field_value": "gdpr"},
+    {"action_type": "set_case_field", "field_name": "sla_days", "field_value": 30},
+    {"action_type": "set_case_field", "field_name": "priority", "field_value": "urgent"},
+    {"action_type": "set_case_field", "field_name": "routing_queue", "field_value": "fraud_privacy_joint"},
+    {"action_type": "set_case_field", "field_name": "case_status", "field_value": "partially_fulfilled"},
+    {"action_type": "set_case_field", "field_name": "retention_decision", "field_value": "partial_delete"},
+    {"action_type": "set_case_field", "field_name": "escalation_required", "field_value": True},
+    {
+        "action_type": "add_internal_note",
+        "content": "cross-account mapping; guardian verification; partial fulfillment; legal hold; fraud investigation",
+    },
+    {
+        "action_type": "draft_reply",
+        "content": "Please verify your authority. We cannot delete all data now, but we can provide eligible data through partial fulfillment once verification is complete.",
+    },
+    {"action_type": "request_review", "reviewer": "legal"},
+    {"action_type": "request_review", "reviewer": "audit"},
+    {"action_type": "self_review"},
+    {"action_type": "submit"},
+]
 
 
 class TypedSchemaResponse(BaseModel):
@@ -177,6 +225,55 @@ def _encode_image_data(path: Path | None) -> str | None:
     return f"data:{media_type};base64,{encoded}"
 
 
+def _encode_svg_data(svg: str) -> str:
+    return f"data:image/svg+xml;charset=utf-8,{quote(svg)}"
+
+
+def _build_bar_chart_svg(random_score: float, teacher_score: float) -> str:
+    random_height = int(random_score * 200)
+    teacher_height = int(teacher_score * 200)
+    random_y = 240 - random_height
+    teacher_y = 240 - teacher_height
+    svg = f"""
+    <svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="Finale baseline range">
+      <rect width="640" height="320" fill="#08131c"/>
+      <line x1="70" y1="240" x2="590" y2="240" stroke="#365065" stroke-width="2"/>
+      <line x1="70" y1="40" x2="70" y2="240" stroke="#365065" stroke-width="2"/>
+      <rect x="150" y="{random_y}" width="110" height="{random_height}" rx="12" fill="#56d3c5"/>
+      <rect x="360" y="{teacher_y}" width="110" height="{teacher_height}" rx="12" fill="#ffbf70"/>
+      <text x="205" y="270" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">Random</text>
+      <text x="415" y="270" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">Teacher</text>
+      <text x="205" y="{max(28, random_y - 12)}" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">{random_score:.4f}</text>
+      <text x="415" y="{max(28, teacher_y - 12)}" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">{teacher_score:.4f}</text>
+      <text x="24" y="245" fill="#8ea7b8" font-size="14" font-family="Arial">0.0</text>
+      <text x="24" y="46" fill="#8ea7b8" font-size="14" font-family="Arial">1.0</text>
+    </svg>
+    """
+    return _encode_svg_data(svg)
+
+
+def _build_improvement_chart_svg(baseline_score: float, improved_score: float) -> str:
+    point_a_y = 240 - int(baseline_score * 180)
+    point_b_y = 240 - int(improved_score * 180)
+    svg = f"""
+    <svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="Self-improvement curve">
+      <rect width="640" height="320" fill="#08131c"/>
+      <line x1="80" y1="240" x2="580" y2="240" stroke="#365065" stroke-width="2"/>
+      <line x1="80" y1="40" x2="80" y2="240" stroke="#365065" stroke-width="2"/>
+      <polyline points="170,{point_a_y} 470,{point_b_y}" fill="none" stroke="#56d3c5" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="170" cy="{point_a_y}" r="9" fill="#ff8f87"/>
+      <circle cx="470" cy="{point_b_y}" r="9" fill="#56d3c5"/>
+      <text x="170" y="270" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">Before</text>
+      <text x="470" y="270" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">After</text>
+      <text x="170" y="{max(28, point_a_y - 14)}" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">{baseline_score:.4f}</text>
+      <text x="470" y="{max(28, point_b_y - 14)}" text-anchor="middle" fill="#d9e8f0" font-size="18" font-family="Arial">{improved_score:.4f}</text>
+      <text x="30" y="245" fill="#8ea7b8" font-size="14" font-family="Arial">0.0</text>
+      <text x="30" y="46" fill="#8ea7b8" font-size="14" font-family="Arial">1.0</text>
+    </svg>
+    """
+    return _encode_svg_data(svg)
+
+
 def _format_score(value: float | None) -> str:
     if value is None:
         return "pending"
@@ -242,14 +339,22 @@ def _load_dashboard_payload() -> dict[str, Any]:
         else DASHBOARD_FALLBACK_SCORES["improved_score"]
     )
 
+    if random_plot is None:
+        random_plot = _build_bar_chart_svg(random_score, teacher_score)
+    if self_plot is None:
+        self_plot = _build_improvement_chart_svg(baseline_score, improved_score)
+
+    before_behavior = self_report.get("episodes", [{}])[0].get("trajectory") if self_report else DASHBOARD_FALLBACK_BEFORE
+    after_behavior = self_report.get("episodes", [{}, {}])[1].get("trajectory") if self_report else DASHBOARD_FALLBACK_AFTER
+
     return {
         "random_score": random_score,
         "teacher_score": teacher_score,
         "sft_score": sft_score,
         "baseline_score": baseline_score,
         "improved_score": improved_score,
-        "before_behavior": self_report.get("before_behavior") if self_report else None,
-        "after_behavior": self_report.get("after_behavior") if self_report else None,
+        "before_behavior": before_behavior,
+        "after_behavior": after_behavior,
         "random_plot": random_plot,
         "self_plot": self_plot,
     }

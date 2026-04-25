@@ -79,6 +79,17 @@ def test_judge_report_and_curriculum_endpoints_respond() -> None:
     assert len(curriculum_body["tracks"]) == 4
 
 
+def test_dashboard_uses_fallback_content_when_artifacts_are_missing(monkeypatch) -> None:
+    monkeypatch.setattr(app_module, "_load_optional_json", lambda *args: None)
+    monkeypatch.setattr(app_module, "_first_existing", lambda *args: None)
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert "0.3594" in response.text
+    assert "0.9519" in response.text
+    assert "acct_eu_recovery_primary" in response.text
+    assert "Random vs teacher comparison plot" in response.text
+
+
 def test_malformed_json_payload_is_rejected() -> None:
     response = client.post(
         "/reset",
