@@ -4,8 +4,10 @@ server/__pycache__/
 tests/__pycache__/
 outputs/logs/*
 outputs/evals/*
+outputs/plots/*.png
 !outputs/logs/.gitkeep
 !outputs/evals/.gitkeep
+!outputs/plots/.gitkeep
 .env
 .env.*
 *.pem

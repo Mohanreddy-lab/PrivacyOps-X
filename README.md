@@ -383,9 +383,7 @@ Before submission, the team should:
 
 If the first GPU SFT checkpoint does not beat baseline, stop and tune SFT before spending compute on RL.
 
-![Self-improvement curve](outputs/plots/self_improvement_curve.png)
-
-Caption: deterministic self-improvement cycle on the finale showcase task, showing score improvement after critic feedback and retry.
+Generated evaluation plots are written to `outputs/plots/` during local or Colab runs and are intentionally excluded from the Hugging Face Space git history so the Space stays pushable and lightweight.
 
 ## Final submission checklist
 
