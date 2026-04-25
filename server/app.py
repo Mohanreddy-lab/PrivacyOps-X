@@ -46,6 +46,7 @@ READ_RATE_LIMIT_MAX_REQUESTS = 240
 EPISODE_RATE_LIMIT_MAX_REQUESTS = 120
 AUTH_RATE_LIMIT_MAX_REQUESTS = 5
 RATE_LIMIT_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
+FRAME_ANCESTORS_POLICY = "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co https://*.hf.space"
 
 
 class TypedSchemaResponse(BaseModel):
@@ -359,9 +360,9 @@ async def security_and_pretty_json_middleware(request: Request, call_next):
 
     response = await call_next(validated_request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-store"
+    response.headers["Content-Security-Policy"] = FRAME_ANCESTORS_POLICY
     pretty = request.query_params.get("pretty")
     if not pretty or pretty.lower() in {"0", "false", "no"}:
         return response
