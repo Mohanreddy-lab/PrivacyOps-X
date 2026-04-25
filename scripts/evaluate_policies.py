@@ -147,15 +147,27 @@ def sample_random_action(
 
 class LocalCheckpointPolicy:
     def __init__(self, model_path: str, max_new_tokens: int) -> None:
+        import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         if self.tokenizer.pad_token is None and self.tokenizer.eos_token is not None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLM.from_pretrained(model_path)
+        model_kwargs: dict[str, Any] = {}
+        if torch.cuda.is_available():
+            model_kwargs["device_map"] = "auto"
+            model_kwargs["torch_dtype"] = (
+                torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+            )
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, **model_kwargs)
+        if not torch.cuda.is_available():
+            self.model.to("cpu")
+        self.model.eval()
         self.max_new_tokens = max_new_tokens
 
     def next_action(self, task_id: str, observation, history: list[str]) -> dict[str, Any]:
+        import torch
+
         messages = [
             {
                 "role": "system",
@@ -175,12 +187,15 @@ class LocalCheckpointPolicy:
         else:
             prompt = "\n\n".join(f"{m['role']}: {m['content']}" for m in messages)
         inputs = self.tokenizer(prompt, return_tensors="pt")
-        outputs = self.model.generate(
-            **inputs,
-            do_sample=False,
-            max_new_tokens=self.max_new_tokens,
-            pad_token_id=self.tokenizer.pad_token_id,
-        )
+        model_device = next(self.model.parameters()).device
+        inputs = {name: tensor.to(model_device) for name, tensor in inputs.items()}
+        with torch.inference_mode():
+            outputs = self.model.generate(
+                **inputs,
+                do_sample=False,
+                max_new_tokens=self.max_new_tokens,
+                pad_token_id=self.tokenizer.pad_token_id,
+            )
         generated = outputs[0][inputs["input_ids"].shape[-1] :]
         text = self.tokenizer.decode(generated, skip_special_tokens=True)
         try:
