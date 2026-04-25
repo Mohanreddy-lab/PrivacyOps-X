@@ -22,7 +22,9 @@ def test_playground_endpoint_renders_ui() -> None:
     assert "Episode control" in response.text
     assert "Action JSON" in response.text
     assert "Reset episode" in response.text
-    assert 'output.textContent = title + "\\\\n\\\\n" + JSON.stringify(payload, null, 2);' in response.text
+    assert "Pretty" not in response.text
+    assert 'output.textContent = title +' in response.text
+    assert 'JSON.stringify(payload, null, 2);' in response.text
 
 
 def test_web_alias_renders_playground_ui() -> None:
@@ -44,6 +46,7 @@ def test_state_and_schema_endpoints_respond() -> None:
     schema_response = client.get("/schema")
     assert state_response.status_code == 200
     assert schema_response.status_code == 200
+    assert schema_response.text.startswith('{\n  "action":')
     schema = schema_response.json()
     assert "action" in schema
     assert "observation" in schema

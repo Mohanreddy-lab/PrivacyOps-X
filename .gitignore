@@ -1,10 +1,13 @@
 .pytest_cache/
+.venv/
 __pycache__/
 server/__pycache__/
 tests/__pycache__/
+*.egg-info/
 outputs/logs/*
 outputs/evals/*
 outputs/plots/*.png
+outputs/checkpoints/
 !outputs/logs/.gitkeep
 !outputs/evals/.gitkeep
 !outputs/plots/.gitkeep

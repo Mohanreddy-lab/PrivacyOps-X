@@ -7,7 +7,10 @@ import json
 import os
 from typing import Any
 
-from openai import OpenAI
+try:
+    from openai import OpenAI as OpenAIClient
+except Exception:
+    OpenAIClient = None
 
 from client import PrivacyOpsXEnv
 from models import PrivacyOpsAction, PrivacyOpsObservation
@@ -97,8 +100,12 @@ def _strict_unit_score(value: float) -> float:
     return numeric
 
 
+def _docker_fallback_enabled() -> bool:
+    return os.getenv("ENABLE_DOCKER_FALLBACK", "0").lower() in {"1", "true", "yes", "on"}
+
+
 def get_model_action(
-    client: OpenAI | None,
+    client: Any | None,
     task_id: str,
     step: int,
     observation: PrivacyOpsObservation,
@@ -152,6 +159,21 @@ async def create_env() -> PrivacyOpsXEnv:
         await client.connect()
         return client
 
+    last_error: Exception | None = None
+    for fallback_url in ("http://127.0.0.1:8000", "http://localhost:8000"):
+        try:
+            client = PrivacyOpsXEnv(base_url=fallback_url)
+            await client.connect()
+            return client
+        except Exception as exc:
+            last_error = exc
+
+    if not _docker_fallback_enabled():
+        raise RuntimeError(
+            "Unable to initialize environment client. Set ENV_BASE_URL or expose the environment on localhost:8000. "
+            "For local Docker fallback, set ENABLE_DOCKER_FALLBACK=1."
+        ) from last_error
+
     image_candidates = [
         LOCAL_IMAGE_NAME,
         os.getenv("IMAGE_NAME"),
@@ -159,7 +181,6 @@ async def create_env() -> PrivacyOpsXEnv:
         DEFAULT_IMAGE_NAME_ALT,
     ]
     seen: set[str] = set()
-    last_error: Exception | None = None
     for image_name in image_candidates:
         if not image_name or image_name in seen:
             continue
@@ -171,18 +192,10 @@ async def create_env() -> PrivacyOpsXEnv:
                 last_error = exc
                 await asyncio.sleep(0.5)
 
-    for fallback_url in ("http://127.0.0.1:8000", "http://localhost:8000"):
-        try:
-            client = PrivacyOpsXEnv(base_url=fallback_url)
-            await client.connect()
-            return client
-        except Exception as exc:
-            last_error = exc
-
     raise RuntimeError("Unable to initialize environment client") from last_error
 
 
-async def run_task(client: OpenAI | None, task_id: str) -> float:
+async def run_task(client: Any | None, task_id: str) -> float:
     env: PrivacyOpsXEnv | None = None
     history: list[str] = []
     rewards: list[float] = []
@@ -257,10 +270,10 @@ async def run_task(client: OpenAI | None, task_id: str) -> float:
 
 
 async def main() -> None:
-    client: OpenAI | None = None
-    if API_KEY:
+    client: Any | None = None
+    if API_KEY and OpenAIClient is not None:
         try:
-            client = OpenAI(
+            client = OpenAIClient(
                 base_url=API_BASE_URL,
                 api_key=API_KEY,
                 timeout=MODEL_TIMEOUT_SECONDS,
@@ -270,6 +283,8 @@ async def main() -> None:
             if os.environ.get("LOG_DEBUG") == "1":
                 print(f"[DEBUG] openai_client_init_error: {exc}", flush=True)
             client = None
+    elif API_KEY and os.environ.get("LOG_DEBUG") == "1":
+        print("[DEBUG] openai_client_unavailable: falling back to deterministic policy", flush=True)
 
     for task_id in TASK_ORDER:
         try:

@@ -50,7 +50,7 @@ RATE_LIMIT_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
 FRAME_ANCESTORS_POLICY = "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co https://*.hf.space"
 DASHBOARD_FALLBACK_SCORES = {
     "random_score": 0.3594,
-    "teacher_score": 1.0,
+    "teacher_score": 0.99,
     "baseline_score": 0.6087,
     "improved_score": 0.9519,
 }
@@ -482,9 +482,6 @@ async def security_and_pretty_json_middleware(request: Request, call_next):
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-store"
     response.headers["Content-Security-Policy"] = FRAME_ANCESTORS_POLICY
-    pretty = request.query_params.get("pretty")
-    if not pretty or pretty.lower() in {"0", "false", "no"}:
-        return response
     content_type = response.headers.get("content-type", "")
     if "application/json" not in content_type:
         return response
@@ -1292,13 +1289,6 @@ def playground() -> str:
                     <label for="seed">Seed</label>
                     <input id="seed" type="number" value="0" min="0">
                   </div>
-                  <div class="field">
-                    <label for="pretty">Pretty</label>
-                    <select id="pretty">
-                      <option value="1">On</option>
-                      <option value="0">Off</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div class="button-row">
@@ -1392,17 +1382,12 @@ def playground() -> str:
             statusChip.style.background = "var(--ok-soft)";
           }
 
-          function prettyEnabled() {
-            return document.getElementById("pretty").value === "1";
-          }
-
           function render(title, payload) {
             output.textContent = title + "\\n\\n" + JSON.stringify(payload, null, 2);
           }
 
           async function request(path, options = {}) {
-            const url = prettyEnabled() ? path + (path.includes("?") ? "&pretty=1" : "?pretty=1") : path;
-            const response = await fetch(url, options);
+            const response = await fetch(path, options);
             const text = await response.text();
             let body;
             try {

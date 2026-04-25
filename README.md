@@ -27,7 +27,7 @@ PrivacyOps-X is a practical OpenEnv benchmark for privacy-rights operations. It 
 ## Topline results
 
 - Random baseline: `0.3695`
-- Teacher oracle: `1.0`
+- Teacher oracle: `0.99`
 - Explicit self-improvement loop: `0.6087 -> 0.9519`
 - Local CPU SFT smoke test: `0.3402`
 - Final GPU SFT benchmark run: `pending`
@@ -264,9 +264,9 @@ Episodes are graded with nine normalized components:
 - `0.04` interaction quality
 - `0.02` confidence calibration
 
-Golden trajectories for all three public tasks score `1.0`.
+Golden trajectories for all three public tasks score `0.99`.
 
-The finale showcase task also has a deterministic teacher trajectory that scores `1.0`.
+The finale showcase task also has a deterministic teacher trajectory that scores `0.99`.
 
 ## Failure taxonomy
 
@@ -366,7 +366,7 @@ This is the main research claim of PrivacyOps-X: the environment is not just a d
 The repo already contains proof that the environment, evaluator, and training pipeline work:
 
 - random baseline: `0.3695` in `outputs/evals/random.json`
-- teacher upper bound: `1.0` in `outputs/evals/teacher.json`
+- teacher upper bound: `0.99` in `outputs/evals/teacher.json`
 - explicit self-improvement jump: `0.6087 -> 0.9519` in `outputs/evals/self_improvement_cycle.json`
 - local CPU SFT smoke test: `0.3402` in `outputs/evals/sft_tiny_checkpoint.json`
 
@@ -426,9 +426,9 @@ For local reproducibility without credentials, the script falls back to a determ
 
 | Task | Score |
 | --- | ---: |
-| Easy | 1.00 |
-| Medium | 1.00 |
-| Hard | 1.00 |
+| Easy | 0.99 |
+| Medium | 0.99 |
+| Hard | 0.99 |
 
 Local verification completed with:
 

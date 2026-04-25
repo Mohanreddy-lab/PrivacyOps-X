@@ -90,9 +90,9 @@ def test_golden_trajectories_score_one() -> None:
         PrivacyOpsAction(action_type="request_review", reviewer="legal"),
         PrivacyOpsAction(action_type="submit"),
     ]
-    assert run_plan("easy_verified_access_with_injection", easy_actions) == 1.0
-    assert run_plan("medium_unverified_erasure_multi_account", medium_actions) == 1.0
-    assert run_plan("hard_guardian_minor_legal_hold_fraud", hard_actions) == 1.0
+    assert run_plan("easy_verified_access_with_injection", easy_actions) == 0.99
+    assert run_plan("medium_unverified_erasure_multi_account", medium_actions) == 0.99
+    assert run_plan("hard_guardian_minor_legal_hold_fraud", hard_actions) == 0.99
 
 
 def test_failure_trajectory_scores_lower_and_tracks_failures() -> None:
@@ -128,4 +128,17 @@ def test_teacher_plan_solves_finale_task() -> None:
         "finale_cross_border_recovery_cascade",
         build_teacher_actions("finale_cross_border_recovery_cascade"),
     )
-    assert score == 1.0
+    assert score == 0.99
+
+
+def test_final_scores_stay_in_open_interval() -> None:
+    low_score = run_plan(
+        "easy_verified_access_with_injection",
+        [PrivacyOpsAction(action_type="submit")],
+    )
+    high_score = run_plan(
+        "finale_cross_border_recovery_cascade",
+        build_teacher_actions("finale_cross_border_recovery_cascade"),
+    )
+    assert 0.0 < low_score < 1.0
+    assert 0.0 < high_score < 1.0

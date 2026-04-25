@@ -23,6 +23,15 @@ WORKSPACE_PROGRESS_FIELDS = [
     "retention_decision",
     "escalation_required",
 ]
+STRICT_SCORE_EPS = 0.01
+
+
+def _strict_public_score(value: float) -> float:
+    if value <= 0.0:
+        return STRICT_SCORE_EPS
+    if value >= 1.0:
+        return 1.0 - STRICT_SCORE_EPS
+    return value
 
 
 def _fraction_matches(expected: dict[str, Any], actual: PrivacyOpsState) -> float:
@@ -212,6 +221,7 @@ def grade_episode(state: PrivacyOpsState, task: dict[str, Any]) -> BenchmarkBrea
     sla_timeliness = 1.0 if state.step_count <= state.sla_window_steps else 0.0
 
     final_score = round(
+        _strict_public_score(
         0.22 * compliance_accuracy
         + 0.18 * safety_score
         + 0.18 * reasoning_quality
@@ -221,7 +231,8 @@ def grade_episode(state: PrivacyOpsState, task: dict[str, Any]) -> BenchmarkBrea
         + 0.06 * evidence_coverage
         + 0.04 * interaction_quality
         + 0.01 * confidence_calibration
-        + 0.01 * sla_timeliness,
+        + 0.01 * sla_timeliness
+        ),
         4,
     )
 
