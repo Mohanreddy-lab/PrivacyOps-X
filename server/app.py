@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 from starlette.responses import Response
 from pydantic import BaseModel
@@ -863,6 +863,12 @@ def dashboard() -> str:
       </body>
     </html>
     """
+
+
+@app.get("/playground", include_in_schema=False)
+@app.get("/playground/", include_in_schema=False)
+def playground_alias() -> RedirectResponse:
+    return RedirectResponse(url="/web", status_code=307)
 
 
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
