@@ -1277,7 +1277,7 @@ def playground() -> str:
           }
 
           function render(title, payload) {
-            output.textContent = title + "\n\n" + JSON.stringify(payload, null, 2);
+            output.textContent = title + "\\n\\n" + JSON.stringify(payload, null, 2);
           }
 
           async function request(path, options = {}) {

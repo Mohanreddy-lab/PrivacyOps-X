@@ -22,6 +22,7 @@ def test_playground_endpoint_renders_ui() -> None:
     assert "Episode control" in response.text
     assert "Action JSON" in response.text
     assert "Reset episode" in response.text
+    assert 'output.textContent = title + "\\\\n\\\\n" + JSON.stringify(payload, null, 2);' in response.text
 
 
 def test_web_alias_renders_playground_ui() -> None:
