@@ -907,24 +907,24 @@ def dashboard() -> str:
 
           <section class="grid stats">
             <article class="card">
-              <div class="label">Random finale</div>
-              <div class="value">{random_score}<small>lower-bound baseline</small></div>
+              <div class="label">Random Policy</div>
+              <div class="value">{random_score}<small>weak baseline</small></div>
             </article>
             <article class="card">
-              <div class="label">Teacher finale</div>
-              <div class="value">{teacher_score}<small>oracle upper bound</small></div>
+              <div class="label">Teacher Policy</div>
+              <div class="value">{teacher_score}<small>best known policy</small></div>
             </article>
             <article class="card">
-              <div class="label">Self-improve before</div>
-              <div class="value">{baseline_score}<small>adaptive policy start</small></div>
+              <div class="label">First Try</div>
+              <div class="value">{baseline_score}<small>before feedback</small></div>
             </article>
             <article class="card">
-              <div class="label">Self-improve after</div>
-              <div class="value">{improved_score}<small>adaptive policy end</small></div>
+              <div class="label">Improved Try</div>
+              <div class="value">{improved_score}<small>after feedback</small></div>
             </article>
             <article class="card">
-              <div class="label">GPU SFT checkpoint</div>
-              <div class="value">{sft_score}<small>{"pending run" if payload["sft_score"] is None else "trained checkpoint"}</small></div>
+              <div class="label">Trained Model</div>
+              <div class="value">{sft_score}<small>{"not added yet" if payload["sft_score"] is None else "GPU SFT result"}</small></div>
             </article>
           </section>
 
@@ -932,48 +932,49 @@ def dashboard() -> str:
             <h2>Plots</h2>
             <div class="split">
               <article class="card plot">
-                <h3>Finale baseline range</h3>
-                <p class="muted">Random policy versus teacher policy on the showcase task.</p>
+                <h3>Policy Comparison</h3>
+                <p class="muted">This compares a weak random policy with the strong teacher policy on the finale task.</p>
                 {random_plot_html}
               </article>
               <article class="card plot">
-                <h3>Self-improvement curve</h3>
-                <p class="muted">Failure-aware adaptive policy improving over repeated episodes.</p>
+                <h3>Improvement Over Retries</h3>
+                <p class="muted">The same adaptive agent gets better after feedback and another attempt.</p>
                 {self_plot_html}
               </article>
             </div>
           </section>
 
           <section class="section">
-            <h2>Before vs after</h2>
+            <h2>Clear Example</h2>
+            <p class="muted">The plots above compare policies. The two JSON examples below show the self-improvement loop: first try vs improved try.</p>
             <div class="split">
               <article class="card">
-                <h3>Before improvement</h3>
-                <p class="muted">Short, shallow trajectory that submits with limited evidence and no reviewer coordination.</p>
+                <h3>First Try</h3>
+                <p class="muted">This attempt sets a few fields and submits too early.</p>
                 {before_html}
               </article>
               <article class="card">
-                <h3>After improvement</h3>
-                <p class="muted">Full trajectory with record inspection, policy grounding, requester follow-up, review, and self-check.</p>
+                <h3>Improved Try</h3>
+                <p class="muted">This attempt opens records, checks policy, asks follow-up questions, gets review, and then submits.</p>
                 {after_html}
               </article>
             </div>
           </section>
 
           <section class="section">
-            <h2>Reward breakdown</h2>
+            <h2>What The Score Means</h2>
             <article class="card">
               <table>
                 <thead>
                   <tr><th>Metric</th><th>Meaning</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Compliance</td><td>Follows privacy workflow and policy requirements.</td></tr>
-                  <tr><td>Safety</td><td>Avoids harmful disclosure, unsafe routing, or false promises.</td></tr>
-                  <tr><td>Evidence</td><td>Opens the right records, policy, and requester facts before acting.</td></tr>
-                  <tr><td>Legal</td><td>Handles legal hold, retention, and escalation consistently.</td></tr>
-                  <tr><td>Communication</td><td>Produces safe requester replies and clear internal notes.</td></tr>
-                  <tr><td>Efficiency</td><td>Avoids redundant or wasteful steps while staying within budget.</td></tr>
+                  <tr><td>Compliance</td><td>Does the agent follow the privacy rules?</td></tr>
+                  <tr><td>Safety</td><td>Does it avoid harmful actions or unsafe promises?</td></tr>
+                  <tr><td>Evidence</td><td>Does it check records, policy, and requester facts before acting?</td></tr>
+                  <tr><td>Legal</td><td>Does it handle legal hold, retention, and escalation correctly?</td></tr>
+                  <tr><td>Communication</td><td>Does it give a safe user reply and clear internal notes?</td></tr>
+                  <tr><td>Efficiency</td><td>Does it avoid extra steps and stay within the step budget?</td></tr>
                 </tbody>
               </table>
             </article>
