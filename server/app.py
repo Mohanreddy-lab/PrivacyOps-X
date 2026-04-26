@@ -488,13 +488,22 @@ def _shell_css() -> str:
     .px-session-grid span {color: #eef4f8;}
     .px-note {border-left: 3px solid #4fd1c5; padding-left: 12px; color: #eef4f8;}
     .px-note-muted {border-left-color: #365065; color: #9ab0c4;}
+    .px-playground-shell {padding: 8px; background: #08131d;}
+    .px-playground-frame {
+      width: 100%;
+      min-height: 960px;
+      border: 1px solid #22384d;
+      border-radius: 18px;
+      background: #08131d;
+    }
     @media (max-width: 1024px) {
       .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid {grid-template-columns: 1fr;}
+      .px-playground-frame {min-height: 1100px;}
     }
     """
 
 
-def _build_overview_html(payload: dict[str, Any]) -> str:
+def _build_overview_html(payload: dict[str, Any], *, include_playground: bool = False) -> str:
     task_cards = "".join(
         f"""
         <article class="px-card px-task-card">
@@ -535,6 +544,26 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
                 "This shows the trained model score when it is ready.",
             ),
         ]
+    )
+    playground_section = (
+        """
+      <section class="px-section">
+        <div class="px-section-head">
+          <h2>Live playground</h2>
+          <p>You can run the demo directly on this homepage. The full page is also available at <code>/playground</code>.</p>
+        </div>
+        <article class="px-card px-playground-shell">
+          <iframe
+            class="px-playground-frame"
+            src="/playground"
+            title="PrivacyOps-X playground"
+            loading="lazy"
+          ></iframe>
+        </article>
+      </section>
+        """
+        if include_playground
+        else ""
     )
     return f"""
     <div class="px-shell">
@@ -603,6 +632,8 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
           </article>
         </div>
       </section>
+
+      {playground_section}
     </div>
     """
 
@@ -687,7 +718,7 @@ def _render_home_html() -> HTMLResponse:
             <style>{_shell_css()}</style>
           </head>
           <body>
-            {_build_overview_html(payload)}
+            {_build_overview_html(payload, include_playground=True)}
           </body>
         </html>
         """

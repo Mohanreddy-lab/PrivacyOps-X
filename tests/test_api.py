@@ -13,6 +13,8 @@ def test_root_endpoint_renders_homepage() -> None:
     assert "PrivacyOps-X" in response.text
     assert "What this project does" in response.text
     assert "View results" in response.text
+    assert "Live playground" in response.text
+    assert 'src="/playground"' in response.text
 
 
 def test_playground_endpoint_renders_ui() -> None:
@@ -32,6 +34,7 @@ def test_web_alias_renders_playground_ui() -> None:
     assert response.status_code == 200
     assert "PrivacyOps-X" in response.text
     assert "What this project does" in response.text
+    assert "Live playground" in response.text
 
 
 def test_reset_endpoint_responds() -> None:
