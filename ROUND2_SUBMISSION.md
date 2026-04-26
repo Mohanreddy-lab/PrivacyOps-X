@@ -1,5 +1,19 @@
 # PrivacyOps-X — Round 2 Submission
 
+## 0) Submission links
+
+This section is the fast path for validators and judges.
+
+- **Live Hugging Face Space:** [mohareddy1423-privacyops-x-final.hf.space](https://mohareddy1423-privacyops-x-final.hf.space)
+- **Hugging Face Space repo:** [mohareddy1423/PrivacyOps-X-final](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final)
+- **GitHub repo:** [Mohanreddy-lab/PrivacyOps-X](https://github.com/Mohanreddy-lab/PrivacyOps-X)
+- **Training notebook in repo:** [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- **Open notebook in Colab:** [Open in Colab](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
+- **Training guide:** [`TRAINING.md`](TRAINING.md)
+- **Technical writeup:** [`blog.md`](blog.md)
+- **Slides / PPT public URL:** `PASTE_PUBLIC_SLIDES_LINK_HERE`
+- **Short video or external public writeup:** `PASTE_PUBLIC_VIDEO_OR_BLOG_LINK_HERE`
+
 ## 1) Problem Statement
 
 Build and evaluate an autonomous privacy-operations agent that can safely resolve real-world user rights requests under uncertainty, policy conflicts, adversarial instructions, and multi-stakeholder review.

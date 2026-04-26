@@ -17,6 +17,33 @@ In addition, the project includes a full supervised fine-tuning pipeline. A reco
 
 That makes PrivacyOps-X more than a visual demo. It is a real benchmark and training environment for privacy reasoning agents.
 
+## Submission materials and public links
+
+This repository is organized so judges can reach every important artifact from one place.
+
+- **Live Hugging Face Space:** [mohareddy1423-privacyops-x-final.hf.space](https://mohareddy1423-privacyops-x-final.hf.space)
+- **Hugging Face Space repo:** [mohareddy1423/PrivacyOps-X-final](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final)
+- **GitHub repo:** [Mohanreddy-lab/PrivacyOps-X](https://github.com/Mohanreddy-lab/PrivacyOps-X)
+- **Training notebook in repo:** [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- **Open notebook in Colab:** [Open in Colab](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
+- **Training guide:** [`TRAINING.md`](TRAINING.md)
+- **README / judge index:** [`README.md`](README.md)
+- **Round 2 brief:** [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md)
+- **Slides / PPT public URL:** `PASTE_PUBLIC_SLIDES_LINK_HERE`
+- **Short video or external public writeup:** `PASTE_PUBLIC_VIDEO_OR_BLOG_LINK_HERE`
+
+If you publish your slides or a short YouTube walkthrough, add the public URLs in the README section called **Public materials and presentation links** so validation can find them immediately.
+
+## What judges should verify
+
+If someone opens this project cold, these are the most important things they should be able to confirm quickly:
+
+- the environment is built on **OpenEnv**
+- the benchmark is publicly deployed on a **Hugging Face Space**
+- there is a **rerunnable training notebook** in the repo
+- there are **real training plots** and **real self-improvement plots**
+- there is a short, readable writeup explaining what the environment does and what was trained
+
 ## The problem: privacy operations are harder than they look
 
 Many AI product demos focus on polished outputs. That works for low-stakes tasks, but privacy operations is not a low-stakes domain.
@@ -303,6 +330,15 @@ The benchmark also supports a symbolic self-improvement loop. Instead of retrain
 
 That gives a clear improvement story even before model retraining is complete.
 
+### Notebook rerun path
+
+For judges who prefer a notebook-first workflow, the Colab notebook is already part of the repository:
+
+- notebook file: [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- one-click Colab launch: [Open in Colab](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
+
+This is important because the project is not only documented as scripts; it also has a replayable notebook path for end-to-end reruns.
+
 ## Results
 
 ### Baselines
@@ -432,6 +468,18 @@ The next steps are straightforward and valuable:
 - add more reviewer specializations
 - integrate direct environment training more deeply
 - add human-in-the-loop evaluation
+
+## Presentation deck notes
+
+If you are attaching a slide deck for judges, the most useful coverage is:
+
+1. the privacy-operations problem and why it is safety-critical
+2. how the OpenEnv benchmark works
+3. the typed action and observation model
+4. the self-improvement result from `0.6087` to `0.9519`
+5. the recovered 1.7B training evidence and loss curve
+
+The README has a dedicated placeholder where the public PPT or PDF URL can be added before final submission.
 
 ## Final takeaway
 

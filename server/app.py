@@ -1101,6 +1101,12 @@ def playground() -> str:
             gap: 18px;
             align-items: start;
           }
+          .explain-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+          }
           .stack {
             display: grid;
             gap: 18px;
@@ -1195,6 +1201,9 @@ def playground() -> str:
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 12px;
           }
+          .explain-grid .mini {
+            min-height: 100%;
+          }
           .mini {
             border-radius: 14px;
             border: 1px solid var(--line);
@@ -1231,7 +1240,8 @@ def playground() -> str:
           @media (max-width: 1080px) {
             .hero,
             .layout,
-            .mini-grid {
+            .mini-grid,
+            .explain-grid {
               grid-template-columns: 1fr;
             }
             .top-actions {
@@ -1249,9 +1259,9 @@ def playground() -> str:
                 <div class="eyebrow">Interactive Playground</div>
                 <h1>PrivacyOps-X</h1>
                 <p class="subtitle">
-                  Use this page to run real benchmark episodes against the live environment.
-                  Reset a case, inspect the observation, send a typed action, and watch the
-                  exact response that the evaluator sees.
+                  This page is the live benchmark interface. Reset a case, inspect the observation,
+                  send a typed action, and watch the exact JSON response that the evaluator and
+                  training pipeline both see.
                 </p>
               </div>
             </div>
@@ -1260,6 +1270,21 @@ def playground() -> str:
               <a class="button" href="/dashboard">Judge Dashboard</a>
               <a class="button" href="/docs">API Docs</a>
               <a class="button" href="/schema">Schema</a>
+            </div>
+          </section>
+
+          <section class="explain-grid">
+            <div class="mini">
+              <strong>What this page proves</strong>
+              You are not chatting with a black box. You are controlling a typed privacy benchmark one step at a time.
+            </div>
+            <div class="mini">
+              <strong>What to do</strong>
+              Pick a task, reset it, inspect the case, open records, search policy, then request review before submitting.
+            </div>
+            <div class="mini">
+              <strong>What you get back</strong>
+              The environment returns structured observations, rewards, and final scores that make the agent behavior inspectable.
             </div>
           </section>
 
@@ -1471,7 +1496,31 @@ def playground() -> str:
 
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
 def index() -> str:
-    return """
+    payload = _load_dashboard_payload()
+    task_count = len(load_tasks())
+    random_score = _format_score(payload["random_score"])
+    teacher_score = _format_score(payload["teacher_score"])
+    baseline_score = _format_score(payload["baseline_score"])
+    improved_score = _format_score(payload["improved_score"])
+    sft_score = _format_score(payload["sft_score"])
+    trained_note = (
+        "Recovered trained-checkpoint score."
+        if payload["sft_score"] is not None
+        else "Final trained-model evaluation can drop in here after rerun."
+    )
+    random_plot_html = (
+        f"<img src='{payload['random_plot']}' alt='Random vs teacher comparison plot' />"
+        if payload["random_plot"]
+        else "<div class='placeholder'>Comparison plot not available yet.</div>"
+    )
+    self_plot_html = (
+        f"<img src='{payload['self_plot']}' alt='Self-improvement curve plot' />"
+        if payload["self_plot"]
+        else "<div class='placeholder'>Self-improvement plot not available yet.</div>"
+    )
+    before_html = _render_trajectory(payload["before_behavior"])
+    after_html = _render_trajectory(payload["after_behavior"])
+    html = """
     <!doctype html>
     <html lang="en">
       <head>
@@ -1615,20 +1664,35 @@ def index() -> str:
           }
           .mini-panel li { margin-bottom: 8px; }
           .stats,
+          .story-grid,
+          .workflow-grid,
+          .io-grid,
           .link-grid,
           .case-grid,
-          .verify-grid {
+          .verify-grid,
+          .result-grid,
+          .trajectory-grid {
             display: grid;
             gap: 16px;
             margin-top: 18px;
           }
-          .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+          .story-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .workflow-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .io-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .link-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .verify-grid { grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); }
+          .result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .trajectory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .stat strong,
+          .story-card h3,
+          .workflow-card h3,
           .link-card h3,
-          .case-card h3 {
+          .case-card h3,
+          .io-card h3,
+          .result-card h3,
+          .trajectory-card h3 {
             display: block;
             margin-bottom: 8px;
           }
@@ -1656,10 +1720,34 @@ def index() -> str:
             text-decoration: none;
           }
           .link-card p,
-          .case-card p {
+          .case-card p,
+          .story-card p,
+          .workflow-card p,
+          .io-card p,
+          .result-card p,
+          .trajectory-card p {
             margin: 0;
             color: var(--muted);
           }
+          .story-card .step-number,
+          .workflow-card .step-number {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 12px;
+            background: rgba(138, 228, 220, 0.12);
+            border: 1px solid #244357;
+            color: var(--accent-2);
+            font-weight: 800;
+          }
+          .bullet-list {
+            margin: 10px 0 0;
+            padding-left: 18px;
+            color: var(--muted);
+          }
+          .bullet-list li { margin-bottom: 8px; }
           .tag {
             display: inline-flex;
             padding: 4px 10px;
@@ -1681,6 +1769,33 @@ def index() -> str:
             color: #dceaf5;
             overflow: auto;
             font: 0.95rem/1.6 Consolas, "Courier New", monospace;
+          }
+          .plot {
+            overflow: hidden;
+          }
+          .plot img {
+            width: 100%;
+            display: block;
+            border-radius: 14px;
+            border: 1px solid #20384c;
+            background: #09131d;
+          }
+          .placeholder {
+            min-height: 260px;
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            border-radius: 14px;
+            border: 1px dashed #2a465d;
+            background: #09131d;
+          }
+          .trajectory {
+            margin: 12px 0 0;
+            padding-left: 18px;
+          }
+          .trajectory li {
+            margin-bottom: 10px;
+            color: var(--ink);
           }
           ul.clean {
             margin: 0;
@@ -1721,13 +1836,16 @@ def index() -> str:
           </div>
 
           <section class="hero">
-            <div class="hero-copy">
-              <div class="eyebrow">Safety-critical privacy operations</div>
-              <p>
-                PrivacyOps-X trains and evaluates agents on real privacy-rights workflows:
-                identity checks, deletion constraints, legal hold, fraud review, requester
-                messaging, and final case submission under measurable reward.
-              </p>
+              <div class="hero-copy">
+                <div class="eyebrow">Safety-critical privacy operations</div>
+                <h2 style="margin-top:12px; font-size:clamp(1.9rem, 3vw, 2.8rem); font-family: Georgia, 'Times New Roman', serif;">
+                  A benchmark that lets you see how a privacy agent thinks, acts, and improves.
+                </h2>
+                <p>
+                  PrivacyOps-X trains and evaluates agents on real privacy-rights workflows:
+                  identity checks, deletion constraints, legal hold, fraud review, requester
+                  messaging, and final case submission under measurable reward.
+                </p>
               <div class="actions">
                 <a class="button primary" href="/playground">Open Playground</a>
                 <a class="button" href="/dashboard">Judge Dashboard</a>
@@ -1739,21 +1857,21 @@ def index() -> str:
             </div>
             <div class="aside">
               <div class="mini-panel">
-                <h2>What judges can verify</h2>
+                <h2>What this project is</h2>
                 <ul>
-                  <li>Typed <code>reset</code>, <code>step</code>, and <code>state</code> endpoints</li>
-                  <li>Deterministic compliance, legal, and audit reviewers</li>
-                  <li>Multi-turn requester interaction with revealed facts</li>
-                  <li>Dense rewards with benchmark-grade final scoring</li>
+                  <li>A deterministic OpenEnv benchmark for privacy and compliance agents</li>
+                  <li>A live simulator where the agent must inspect evidence before acting</li>
+                  <li>A scoring system for safety, policy use, reviewer escalation, and communication</li>
+                  <li>A training and self-improvement pipeline with measurable outputs</li>
                 </ul>
               </div>
               <div class="mini-panel">
-                <h2>Best demo flow</h2>
+                <h2>How to understand it fast</h2>
                 <ul>
-                  <li>Start in <a class="inline-link" href="/playground">/playground</a></li>
-                  <li>Reset the medium or hard task</li>
-                  <li>Run <code>inspect_case</code> first</li>
-                  <li>Show dashboard and API docs after one step</li>
+                  <li>Start in <a class="inline-link" href="/playground">/playground</a> to watch a real episode</li>
+                  <li>Open <a class="inline-link" href="/dashboard">/dashboard</a> for benchmark scores and plots</li>
+                  <li>Check <a class="inline-link" href="/judge-report">/judge-report</a> for the benchmark framing</li>
+                  <li>Use <a class="inline-link" href="/docs">/docs</a> and <a class="inline-link" href="/schema">/schema</a> to verify the API contract</li>
                 </ul>
               </div>
             </div>
@@ -1762,8 +1880,18 @@ def index() -> str:
           <section class="stats">
             <article class="card stat">
               <strong>Scenarios</strong>
-              <div class="value">4</div>
+              <div class="value">__TASK_COUNT__</div>
               <div class="sub">easy, medium, hard, finale</div>
+            </article>
+            <article class="card stat">
+              <strong>Random vs Teacher</strong>
+              <div class="value">__RANDOM_SCORE__</div>
+              <div class="sub">teacher/oracle = __TEACHER_SCORE__</div>
+            </article>
+            <article class="card stat">
+              <strong>Self-improvement</strong>
+              <div class="value">__IMPROVED_SCORE__</div>
+              <div class="sub">from __BASELINE_SCORE__ on the finale task</div>
             </article>
             <article class="card stat">
               <strong>Reviewers</strong>
@@ -1771,14 +1899,110 @@ def index() -> str:
               <div class="sub">compliance, legal, audit</div>
             </article>
             <article class="card stat">
-              <strong>Self-improvement</strong>
-              <div class="value">0.95</div>
-              <div class="sub">from 0.61 on the finale task</div>
+              <strong>Trained Model</strong>
+              <div class="value">__SFT_SCORE__</div>
+              <div class="sub">__TRAINED_NOTE__</div>
             </article>
-            <article class="card stat">
-              <strong>Deployment</strong>
-              <div class="value">HF Space</div>
-              <div class="sub">Dockerized + OpenEnv-compatible</div>
+          </section>
+
+          <div class="section-title">Project in one view</div>
+          <section class="story-grid">
+            <article class="card story-card">
+              <div class="step-number">1</div>
+              <h3>User picks a privacy case</h3>
+              <p>The evaluator chooses a task such as access, erasure, guardian authority, legal hold, or cross-border recovery conflict.</p>
+            </article>
+            <article class="card story-card">
+              <div class="step-number">2</div>
+              <h3>Agent acts through typed tools</h3>
+              <p>The agent cannot hand-wave. It must inspect the case, open records, search policy, message the requester, request review, and then submit.</p>
+            </article>
+            <article class="card story-card">
+              <div class="step-number">3</div>
+              <h3>Environment reveals consequences</h3>
+              <p>Each step changes the visible state and can expose hidden constraints like retention rules, fraud review, or legal hold.</p>
+            </article>
+            <article class="card story-card">
+              <div class="step-number">4</div>
+              <h3>Benchmark outputs measurable results</h3>
+              <p>The run ends with a score, failure modes, trajectories, plots, and training artifacts that show whether the agent handled the workflow safely.</p>
+            </article>
+          </section>
+
+          <div class="section-title">How the benchmark works</div>
+          <section class="workflow-grid">
+            <article class="card workflow-card">
+              <div class="step-number">A</div>
+              <h3>Reset</h3>
+              <p><code>/reset</code> starts a deterministic case with a task, requester thread, visible records, and hidden operational constraints.</p>
+            </article>
+            <article class="card workflow-card">
+              <div class="step-number">B</div>
+              <h3>Step</h3>
+              <p><code>/step</code> accepts one typed action and updates the case, reviewer state, risk, milestones, and reward.</p>
+            </article>
+            <article class="card workflow-card">
+              <div class="step-number">C</div>
+              <h3>Review</h3>
+              <p>Compliance, legal, and audit perspectives are represented in the environment so the agent must gather evidence before resolving the case.</p>
+            </article>
+            <article class="card workflow-card">
+              <div class="step-number">D</div>
+              <h3>Score</h3>
+              <p>The final score reflects safety, policy correctness, legal handling, evidence coverage, communication quality, and efficiency.</p>
+            </article>
+          </section>
+
+          <div class="section-title">What the agent can do and what the system returns</div>
+          <section class="io-grid">
+            <article class="card io-card">
+              <h3>Agent action space</h3>
+              <p>The interface is structured on purpose so behavior is inspectable and trainable.</p>
+              <ul class="bullet-list">
+                <li><code>inspect_case</code> to read the ticket and workspace</li>
+                <li><code>open_record</code> to inspect linked accounts, billing, fraud, or legal hold data</li>
+                <li><code>search_policy</code> and <code>open_policy_article</code> to ground decisions in policy</li>
+                <li><code>message_requester</code> and <code>draft_reply</code> for safe customer communication</li>
+                <li><code>request_review</code> and <code>self_review</code> before <code>submit</code></li>
+              </ul>
+            </article>
+            <article class="card io-card">
+              <h3>Environment outputs</h3>
+              <p>Every step returns rich state so the user can see exactly what changed and why.</p>
+              <ul class="bullet-list">
+                <li>Ticket summary, workspace fields, and requester thread</li>
+                <li>Visible records, visible policy articles, and reviewer findings</li>
+                <li>Risk score, milestones, steps remaining, and draft reply</li>
+                <li>Final score, failure modes, trajectories, and improvement lessons</li>
+                <li>JSON reports, plots, datasets, and training checkpoints</li>
+              </ul>
+            </article>
+          </section>
+
+          <div class="section-title">Measured results and training evidence</div>
+          <section class="result-grid">
+            <article class="card result-card plot">
+              <h3>Policy comparison</h3>
+              <p>This plot shows the baseline range between a weak random policy and the stronger teacher/oracle policy.</p>
+              __RANDOM_PLOT_HTML__
+            </article>
+            <article class="card result-card plot">
+              <h3>Self-improvement loop</h3>
+              <p>This shows the same benchmark agent getting better after feedback, moving from __BASELINE_SCORE__ to __IMPROVED_SCORE__.</p>
+              __SELF_PLOT_HTML__
+            </article>
+          </section>
+
+          <section class="trajectory-grid">
+            <article class="card trajectory-card">
+              <h3>Before feedback</h3>
+              <p>The weaker attempt sets a few fields and tends to submit too early.</p>
+              __BEFORE_HTML__
+            </article>
+            <article class="card trajectory-card">
+              <h3>After feedback</h3>
+              <p>The improved attempt opens records, checks policy, follows up with the requester, and requests review before submitting.</p>
+              __AFTER_HTML__
             </article>
           </section>
 
@@ -1786,15 +2010,15 @@ def index() -> str:
           <section class="link-grid">
             <article class="card link-card">
               <h3><a href="/playground">Interactive playground</a></h3>
-              <p>Reset episodes, send actions, and inspect raw JSON responses live.</p>
+              <p>See the full user interaction loop: choose a case, reset it, send actions, and inspect raw JSON responses live.</p>
             </article>
             <article class="card link-card">
               <h3><a href="/dashboard">Judge dashboard</a></h3>
-              <p>See baseline, oracle, self-improvement, and judge-facing benchmark context.</p>
+              <p>Read the benchmark like a report: baseline, oracle, self-improvement, trajectories, and plots.</p>
             </article>
             <article class="card link-card">
               <h3><a href="/docs">Swagger + schema</a></h3>
-              <p>Inspect the typed OpenAPI surface and model contracts without guessing.</p>
+              <p>Inspect the typed OpenAPI surface and model contracts without guessing what the environment expects.</p>
             </article>
           </section>
 
@@ -1814,6 +2038,18 @@ def index() -> str:
               <span class="tag">Hard + Finale</span>
               <h3>Guardian, legal hold, fraud, and cross-border conflict</h3>
               <p>High-risk workflows force the agent to balance authority, fraud review, retention, and partial fulfillment.</p>
+            </article>
+          </section>
+
+          <div class="section-title">Why this project is different from a chatbot demo</div>
+          <section class="io-grid">
+            <article class="card io-card">
+              <h3>Operational reasoning, not just fluent answers</h3>
+              <p>The benchmark checks whether the agent gathers evidence, asks the right follow-up questions, chooses safe next steps, and respects hidden constraints.</p>
+            </article>
+            <article class="card io-card">
+              <h3>Trainable and reproducible</h3>
+              <p>The same environment supports evaluation, SFT data generation, QLoRA training, self-improvement loops, and judge-facing reproducibility through typed APIs.</p>
             </article>
           </section>
 
@@ -1845,6 +2081,19 @@ curl -X POST /step \\
       </body>
     </html>
     """
+    return (
+        html.replace("__TASK_COUNT__", str(task_count))
+        .replace("__RANDOM_SCORE__", random_score)
+        .replace("__TEACHER_SCORE__", teacher_score)
+        .replace("__BASELINE_SCORE__", baseline_score)
+        .replace("__IMPROVED_SCORE__", improved_score)
+        .replace("__SFT_SCORE__", sft_score)
+        .replace("__TRAINED_NOTE__", trained_note)
+        .replace("__RANDOM_PLOT_HTML__", random_plot_html)
+        .replace("__SELF_PLOT_HTML__", self_plot_html)
+        .replace("__BEFORE_HTML__", before_html)
+        .replace("__AFTER_HTML__", after_html)
+    )
 
 
 def main(host: str = "0.0.0.0", port: int = 8000) -> None:

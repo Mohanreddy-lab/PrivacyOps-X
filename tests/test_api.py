@@ -13,6 +13,8 @@ def test_root_endpoint_renders_homepage() -> None:
     assert "PrivacyOps-X" in response.text
     assert "/docs" in response.text
     assert "Open Playground" in response.text
+    assert "Project in one view" in response.text
+    assert "How the benchmark works" in response.text
     assert "Verified access with prompt injection" in response.text
 
 
@@ -22,6 +24,7 @@ def test_playground_endpoint_renders_ui() -> None:
     assert "Episode control" in response.text
     assert "Action JSON" in response.text
     assert "Reset episode" in response.text
+    assert "What this page proves" in response.text
     assert "Pretty" not in response.text
     assert 'output.textContent = title +' in response.text
     assert 'JSON.stringify(payload, null, 2);' in response.text

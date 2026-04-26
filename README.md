@@ -29,10 +29,36 @@ The result is a benchmark that is not just interactive, but **trainable, measura
 - **Hugging Face Space (submitted app):** [mohareddy1423-privacyops-x-final.hf.space](https://mohareddy1423-privacyops-x-final.hf.space)
 - **Hugging Face Space repo:** [mohareddy1423/PrivacyOps-X-final](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final)
 - **GitHub repo:** [Mohanreddy-lab/PrivacyOps-X](https://github.com/Mohanreddy-lab/PrivacyOps-X)
-- **Training notebook:** [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- **Training notebook in repo:** [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- **Open in Colab:** [Launch the training notebook](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
 - **Training guide:** [`TRAINING.md`](TRAINING.md)
 - **Full writeup / blog:** [`blog.md`](blog.md)
 - **Submission notes:** [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md)
+
+## Submission checklist
+
+These are the key submission items this repository is designed to satisfy:
+
+- **Built on OpenEnv:** this environment uses the latest supported OpenEnv stack through `openenv-core>=0.2.3`.
+- **Runnable training workflow:** both a Colab notebook and script-based training path are included.
+- **Real training evidence:** the repository includes a real SFT loss curve and a real self-improvement reward-style curve.
+- **Public writeup and presentation support:** the README links the Space, notebook, writeup, and placeholders for slides/video so judges can find everything quickly.
+- **Discoverable deployment:** the environment is pushed to a public Hugging Face Space.
+
+## Public materials and presentation links
+
+Use this section as the final judge-facing index. If you publish new public materials, add the public URLs here before final submission.
+
+- **Live environment:** [mohareddy1423-privacyops-x-final.hf.space](https://mohareddy1423-privacyops-x-final.hf.space)
+- **Space source repo:** [mohareddy1423/PrivacyOps-X-final](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final)
+- **Training notebook (repo file):** [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- **Training notebook (Colab launch):** [Open in Colab](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
+- **Training guide:** [`TRAINING.md`](TRAINING.md)
+- **Full technical writeup:** [`blog.md`](blog.md)
+- **Round 2 submission brief:** [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md)
+- **Slides / PPT (add your public Drive or PDF link here):** `PASTE_PUBLIC_SLIDES_LINK_HERE`
+- **Short video or public mini-blog link (optional):** `PASTE_PUBLIC_VIDEO_OR_BLOG_LINK_HERE`
+- **Additional documentation bundle:** [`README.md`](README.md), [`TRAINING.md`](TRAINING.md), [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md), [`blog.md`](blog.md)
 
 ## Why this benchmark exists
 

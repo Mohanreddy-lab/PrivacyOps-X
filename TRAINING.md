@@ -2,6 +2,13 @@
 
 PrivacyOps-X now ships with a judge-friendly training and evaluation path:
 
+## Colab notebook
+
+The repository includes a rerunnable notebook for judges and reviewers who prefer a notebook-first path:
+
+- repo file: [`notebooks/privacyops_x_trl_colab.ipynb`](notebooks/privacyops_x_trl_colab.ipynb)
+- Colab launch: [Open in Colab](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
+
 ## 1. Generate teacher trajectories
 
 ```bash
