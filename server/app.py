@@ -870,7 +870,6 @@ def _build_gradio_demo() -> gr.Blocks:
         title="PrivacyOps-X",
         analytics_enabled=False,
     ) as demo:
-        gr.HTML(_build_overview_html(payload))
         with gr.Tabs():
             with gr.Tab("Run Demo"):
                 gr.Markdown(
@@ -961,6 +960,7 @@ def _build_gradio_demo() -> gr.Blocks:
             with gr.Tab("API"):
                 gr.HTML(_build_api_html())
                 gr.Code(value=schema_text, language="json", label="Schema", lines=24)
+        gr.HTML(_build_overview_html(payload))
     demo.theme = gr.themes.Soft(
         primary_hue="teal",
         neutral_hue="slate",
