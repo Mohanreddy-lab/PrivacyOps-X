@@ -11,7 +11,7 @@ def test_root_endpoint_renders_homepage() -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert "PrivacyOps-X" in response.text
-    assert "What this project does" in response.text
+    assert "How to use this homepage" in response.text
     assert "View results" in response.text
     assert "Open playground" in response.text
     assert 'href="/playground/"' in response.text
@@ -24,6 +24,9 @@ def test_playground_endpoint_renders_ui() -> None:
     assert "Live benchmark playground" in response.text
     assert "Action JSON" in response.text
     assert "Start Case" in response.text
+    assert "state() View State" in response.text
+    assert "close() End Session" in response.text
+    assert "step() Send Action" in response.text
     assert "Results" in response.text
     assert "Schema" in response.text
     assert "Gradio" in response.text or "gradio" in response.text
@@ -33,7 +36,7 @@ def test_web_alias_renders_playground_ui() -> None:
     response = client.get("/web")
     assert response.status_code == 200
     assert "PrivacyOps-X" in response.text
-    assert "What this project does" in response.text
+    assert "How to use this homepage" in response.text
     assert "Open playground" in response.text
 
 

@@ -304,7 +304,11 @@ def _load_dashboard_payload() -> dict[str, Any]:
         "outputs/evals/self_improvement_cycle_live.json",
         "outputs/evals/self_improvement_cycle.json",
     )
-    sft_report = _load_optional_json("outputs/evals/sft_checkpoint.json")
+    sft_report = _load_optional_json(
+        "outputs/evals/sft_checkpoint.json",
+        "outputs/evals/sft_tiny_checkpoint.json",
+        "outputs/evals/model_smoke.json",
+    )
 
     random_plot = _encode_image_data(
         _first_existing(
@@ -352,6 +356,7 @@ def _load_dashboard_payload() -> dict[str, Any]:
         "random_score": random_score,
         "teacher_score": teacher_score,
         "sft_score": sft_score,
+        "sft_is_fallback": sft_report is not None and not Path("outputs/evals/sft_checkpoint.json").exists(),
         "baseline_score": baseline_score,
         "improved_score": improved_score,
         "before_behavior": before_behavior,
@@ -442,6 +447,25 @@ def _shell_css() -> str:
     }
     .px-hero h1 {margin: 10px 0 8px; font-size: clamp(2.5rem, 4vw, 3.6rem); line-height: 1.02;}
     .px-lead {margin: 0; color: #9ab0c4; font-size: 1.04rem; max-width: 62ch;}
+    .px-page-nav {display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;}
+    .px-page-nav a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      border: 1px solid #244357;
+      color: #9ab0c4;
+      background: rgba(15, 29, 42, 0.72);
+      font-weight: 700;
+    }
+    .px-page-nav a.is-active {
+      color: #08131d;
+      background: #4fd1c5;
+      border-color: transparent;
+    }
     .px-link-row {display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;}
     .px-link-button {
       display: inline-flex;
@@ -466,11 +490,23 @@ def _shell_css() -> str:
     .px-guide-grid {grid-template-columns: repeat(3, minmax(0, 1fr));}
     .px-two-up {grid-template-columns: repeat(2, minmax(0, 1fr));}
     .px-steps-grid {grid-template-columns: repeat(4, minmax(0, 1fr));}
+    .px-mini-steps {grid-template-columns: repeat(3, minmax(0, 1fr));}
+    .px-story-grid-wide {grid-template-columns: repeat(3, minmax(0, 1fr));}
     .px-metric-value {font-size: 2rem; font-weight: 800; margin-top: 10px;}
     .px-step {
       width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
       background: #163041; color: #8ae4dc; font-weight: 800; margin-bottom: 12px;
     }
+    .px-mini-step {
+      border-radius: 18px;
+      border: 1px solid #22384d;
+      background: #10202d;
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+    }
+    .px-mini-step strong {color: #eef4f8;}
+    .px-mini-step p {margin: 0; color: #9ab0c4;}
     .px-plot {width: 100%; border-radius: 16px; border: 1px solid #22384d; margin-top: 12px;}
     .px-tip-grid {display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr));}
     .px-tip-card {min-height: 100%;}
@@ -499,6 +535,16 @@ def _shell_css() -> str:
     .px-full-width {width: 100%;}
     .px-tab-note {margin-top: 6px; color: #9ab0c4;}
     .px-home-note {color: #8ae4dc; font-size: 0.95rem; margin-top: 10px;}
+    .px-ops-list {display: grid; gap: 10px; margin-top: 6px;}
+    .px-ops-list li {
+      list-style: none;
+      border: 1px solid #22384d;
+      border-radius: 14px;
+      background: #132536;
+      padding: 12px 14px;
+      color: #c7d8e6;
+    }
+    .px-ops-list strong {display: block; color: #eef4f8; margin-bottom: 4px;}
     .px-dashboard-grid {grid-template-columns: repeat(5, minmax(0, 1fr));}
     .px-dashboard-actions {display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px;}
     .px-score-table {width: 100%; border-collapse: collapse;}
@@ -541,10 +587,27 @@ def _shell_css() -> str:
       box-shadow: 0 10px 24px rgba(0,0,0,0.24);
     }
     @media (max-width: 1024px) {
-      .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid, .px-guide-grid, .px-steps-grid, .px-tip-grid, .px-help-grid, .px-run-grid, .px-dashboard-grid {grid-template-columns: 1fr;}
+      .px-hero, .px-metrics-grid, .px-story-grid, .px-story-grid-wide, .px-task-grid, .px-two-up, .px-session-grid, .px-guide-grid, .px-steps-grid, .px-mini-steps, .px-tip-grid, .px-help-grid, .px-run-grid, .px-dashboard-grid {grid-template-columns: 1fr;}
       .px-button-grid {grid-template-columns: 1fr;}
     }
     """
+
+
+def _page_nav_html(active: str) -> str:
+    links = [
+        ("home", "/", "Home", "Open the project overview and main explanation."),
+        ("playground", "/playground/", "Playground", "Run the live benchmark step by step."),
+        ("results", "/dashboard", "Results", "Open plots, scores, and benchmark results."),
+        ("docs", "/docs", "Docs", "Open the raw API documentation."),
+        ("schema", "/schema", "Schema", "Open the raw JSON schema for action, observation, and state."),
+    ]
+    items = []
+    for key, href, label, title in links:
+        classes = "is-active" if key == active else ""
+        items.append(
+            f'<a class="{classes}" href="{href}" title="{title}">{label}</a>'
+        )
+    return f'<div class="px-page-nav">{"".join(items)}</div>'
 
 
 def _build_overview_html(payload: dict[str, Any]) -> str:
@@ -565,6 +628,11 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
         for task in _task_catalog()
     )
     trained_score = _format_score(payload["sft_score"])
+    checkpoint_caption = (
+        "Current saved checkpoint score."
+        if payload.get("sft_score") is not None
+        else "This score will appear after a checkpoint eval file is available."
+    )
     metrics = "".join(
         [
             _gradio_metric_card(
@@ -585,7 +653,7 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
             _gradio_metric_card(
                 "Trained checkpoint",
                 trained_score,
-                "This shows the trained model score when it is ready.",
+                checkpoint_caption,
             ),
         ]
     )
@@ -623,12 +691,13 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
     <div class="px-shell">
       <section class="px-hero">
         <div>
+          {_page_nav_html("home")}
           <div class="px-eyebrow">Simple demo</div>
           <h1>PrivacyOps-X</h1>
           <p class="px-lead">
-            PrivacyOps-X is a test environment for privacy tasks.
-            It checks if an AI agent can read a case, look at records, check policy,
-            ask for review, and give a safe final answer.
+            PrivacyOps-X is a benchmark for privacy operations.
+            It checks whether an AI agent can handle real privacy cases safely,
+            follow policy, use evidence, and finish with the right final decision.
           </p>
           <div class="px-link-row">
             <a class="px-link-button px-primary" href="/playground/" title="Open the live playground and run the benchmark step by step.">Open playground</a>
@@ -637,16 +706,37 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
             <a class="px-link-button" href="/schema" title="See the exact JSON schema for actions, observations, and state.">Schema</a>
             <a class="px-link-button" href="/judge-report" title="Read the judge-facing summary of the benchmark and training pipeline.">Project summary</a>
           </div>
-          <div class="px-home-note">Tip: start with the playground, then open the dashboard to understand how the benchmark scores the agent.</div>
+          <div class="px-home-note">Start with the playground to see one case live. Then open the results page to understand the scores and plots.</div>
         </div>
         <div class="px-card px-summary-card">
-          <h3>What this project does</h3>
+          <h3>What you should understand on this page</h3>
           <ul>
-            <li>This is a privacy workflow demo, not just a chatbot.</li>
-            <li>The agent uses clear actions like <code>inspect_case</code>, <code>open_record</code>, and <code>request_review</code>.</li>
-            <li>Each step shows what changed, what risk was found, and what score the agent got.</li>
-            <li>The same system can test agents, improve them, and train models.</li>
+            <li><strong>Why:</strong> privacy workflows are high risk, so fluent answers alone are not enough.</li>
+            <li><strong>How:</strong> the agent must use typed actions like <code>inspect_case</code>, <code>open_record</code>, and <code>request_review</code>.</li>
+            <li><strong>What you see:</strong> records, policy, requester messages, review output, risk, milestones, and score.</li>
+            <li><strong>What this proves:</strong> the same system can evaluate agents, improve them, and train models.</li>
           </ul>
+        </div>
+      </section>
+
+      <section class="px-section">
+        <div class="px-section-head">
+          <h2>How to use this homepage</h2>
+          <p>Use this page as a fast map of the project before you open the live demo.</p>
+        </div>
+        <div class="px-grid px-mini-steps">
+          <article class="px-mini-step">
+            <strong>1. Read the project goal</strong>
+            <p>See why privacy operations need a structured benchmark instead of a simple chatbot test.</p>
+          </article>
+          <article class="px-mini-step">
+            <strong>2. Open the playground</strong>
+            <p>Run one case and watch the environment update after every action.</p>
+          </article>
+          <article class="px-mini-step">
+            <strong>3. Open results</strong>
+            <p>Check the final scores, plots, and training evidence after the demo.</p>
+          </article>
         </div>
       </section>
 
@@ -655,6 +745,27 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
       </section>
 
       {workflow_cards}
+
+      <section class="px-section">
+        <div class="px-section-head">
+          <h2>Why this project exists</h2>
+          <p>This explains the problem, the solution, and the training story in simple English.</p>
+        </div>
+        <div class="px-grid px-story-grid-wide">
+          <article class="px-card">
+            <h3>The problem</h3>
+            <p>Privacy teams do more than answer questions. They verify identity, check retention rules, handle legal hold, and talk to users safely.</p>
+          </article>
+          <article class="px-card">
+            <h3>The solution</h3>
+            <p>PrivacyOps-X turns that workflow into a deterministic environment with typed actions, observable state, reviewer signals, and measurable scores.</p>
+          </article>
+          <article class="px-card">
+            <h3>The evidence</h3>
+            <p>The project includes benchmark scores, self-improvement results, training scripts, a Colab notebook, and plots from real runs.</p>
+          </article>
+        </div>
+      </section>
 
       <section class="px-section">
         <div class="px-section-head">
@@ -706,6 +817,28 @@ def _build_results_html(payload: dict[str, Any]) -> str:
     trained_score = _format_score(payload["sft_score"])
     return f"""
     <div class="px-shell">
+      <section class="px-section">
+        {_page_nav_html("results")}
+        <div class="px-section-head">
+          <h2>How to use this results page</h2>
+          <p>Read the two plots first, then compare the score cards, then use the docs and schema links if you want the raw details.</p>
+        </div>
+        <div class="px-grid px-mini-steps">
+          <article class="px-mini-step">
+            <strong>Read the plots</strong>
+            <p>See the difference between a weak policy, a strong policy, and the self-improvement curve.</p>
+          </article>
+          <article class="px-mini-step">
+            <strong>Read the scores</strong>
+            <p>Use the score cards to understand the benchmark baseline and the improvement gain.</p>
+          </article>
+          <article class="px-mini-step">
+            <strong>Open raw data</strong>
+            <p>Use docs, schema, and judge report if you want the exact JSON structures behind the interface.</p>
+          </article>
+        </div>
+      </section>
+
       <section class="px-grid px-two-up">
         <article class="px-card">
           <h2>Policy comparison</h2>
@@ -746,6 +879,28 @@ def _build_results_html(payload: dict[str, Any]) -> str:
 def _build_api_html() -> str:
     return """
     <div class="px-shell">
+      <section class="px-section">
+        """ + _page_nav_html("docs") + """
+        <div class="px-section-head">
+          <h2>How to use the API and schema pages</h2>
+          <p>Open the raw docs if you want endpoint details. Open the schema if you want the exact JSON format used by the benchmark.</p>
+        </div>
+        <div class="px-grid px-mini-steps">
+          <article class="px-mini-step">
+            <strong>Docs</strong>
+            <p>Use <code>/docs</code> to inspect and try the <code>reset</code>, <code>step</code>, and <code>state</code> endpoints.</p>
+          </article>
+          <article class="px-mini-step">
+            <strong>Schema</strong>
+            <p>Use <code>/schema</code> to see the exact shape of action, observation, and state objects.</p>
+          </article>
+          <article class="px-mini-step">
+            <strong>Judge JSON</strong>
+            <p>Use <code>/judge-report</code> and <code>/curriculum</code> to inspect the benchmark framing and self-improvement structure.</p>
+          </article>
+        </div>
+      </section>
+
       <section class="px-grid px-two-up">
         <article class="px-card">
           <h2>API pages</h2>
@@ -772,10 +927,11 @@ def _build_api_html() -> str:
 def _build_playground_intro_html() -> str:
     return """
     <div class="px-shell px-shell-compact">
+      """ + _page_nav_html("playground") + """
       <div class="px-demo-head">
         <div class="px-eyebrow">Run Demo</div>
         <h2>Live benchmark playground</h2>
-        <p>Use this page to understand the whole project and run one privacy case step by step.</p>
+        <p>Use this page to run one privacy case step by step and see exactly how the benchmark works.</p>
       </div>
       <div class="px-help-grid">
         <div class="px-help-card">
@@ -791,6 +947,20 @@ def _build_playground_intro_html() -> str:
           <p>Focus on risk score, visible records, milestone progress, reviewer findings, and the final action path.</p>
         </div>
       </div>
+      <div class="px-grid px-mini-steps">
+        <article class="px-mini-step">
+          <strong>Step 1: start the case</strong>
+          <p>Choose a task and seed, then press <em>Start Case</em> to load the first observation.</p>
+        </article>
+        <article class="px-mini-step">
+          <strong>Step 2: choose an action</strong>
+          <p>Use a quick action button or edit the JSON directly if you want full control.</p>
+        </article>
+        <article class="px-mini-step">
+          <strong>Step 3: read the result</strong>
+          <p>Check the live output and summary panel to see what changed, what risk increased, and whether the case is done.</p>
+        </article>
+      </div>
     </div>
     """
 
@@ -800,6 +970,8 @@ def _gradio_head() -> str:
         "task-picker": "Choose which privacy benchmark case to run.",
         "seed-input": "Use a seed to replay the same deterministic case variant.",
         "start-case": "Reset the environment and start a fresh case.",
+        "state-case": "Read the current environment state without sending a new action.",
+        "close-case": "Close the current session and clear the live state.",
         "inspect-case": "Load the case summary and current workspace details.",
         "search-policy": "Look up policy guidance for the current issue.",
         "request-legal-review": "Ask legal review to check whether the action is safe and allowed.",
@@ -861,6 +1033,48 @@ def _render_home_html() -> HTMLResponse:
           </body>
         </html>
         """
+    )
+
+
+def _gradio_view_state(current_env: PrivacyOpsXEnvironment | None):
+    if current_env is None:
+        message = "Start a case first."
+        return (
+            None,
+            _status_html(message, kind="error"),
+            _session_summary_html(None, None),
+            _dump_json({"error": message}),
+        )
+
+    state_payload = current_env.state.model_dump(mode="json")
+    observation_payload = {
+        "task_id": state_payload.get("task_id"),
+        "difficulty": state_payload.get("difficulty"),
+        "visible_records": state_payload.get("visible_records", []),
+        "milestones": state_payload.get("milestones", []),
+        "risk_score": state_payload.get("risk_score"),
+        "last_action_result": "Current environment state snapshot.",
+    }
+    return (
+        current_env,
+        _status_html("Current state loaded.", kind="ok"),
+        _session_summary_html(observation_payload, state_payload),
+        _dump_json({"operation": "state", "state": state_payload}),
+    )
+
+
+def _gradio_close_episode(current_env: PrivacyOpsXEnvironment | None):
+    if current_env is not None:
+        try:
+            current_env.close()
+        except Exception:
+            pass
+    return (
+        None,
+        _status_html("Session closed. Press reset() Start Case to begin again.", kind="ready"),
+        _session_summary_html(None, None),
+        _dump_json({"operation": "close", "closed": True}),
+        _reset_action_template(),
     )
 
 
@@ -1015,6 +1229,11 @@ def _action_template(action_type: str, **extras: Any) -> str:
 
 def _build_gradio_demo() -> gr.Blocks:
     payload = _load_dashboard_payload()
+    sft_caption = (
+        "Current saved checkpoint result."
+        if payload.get("sft_score") is not None
+        else "This score will appear after a checkpoint eval file is available."
+    )
     task_choices = [
         (f"{task['difficulty']} - {task['subject']}", task["task_id"])
         for task in _task_catalog()
@@ -1046,7 +1265,7 @@ def _build_gradio_demo() -> gr.Blocks:
                 with gr.Row(equal_height=True):
                     with gr.Column(scale=4):
                         with gr.Group(elem_classes=["px-card", "px-field"]):
-                            gr.Markdown("### Case setup\nPick a case, choose a seed, and start the environment.")
+                            gr.Markdown("### Case setup\nPick a case, choose a seed, and run `reset()` to start the environment.")
                             task_id = gr.Dropdown(
                                 choices=task_choices,
                                 value=task_choices[0][1],
@@ -1064,12 +1283,23 @@ def _build_gradio_demo() -> gr.Blocks:
                                 elem_classes=["px-field"],
                             )
                             reset_button = gr.Button(
-                                "Start Case",
+                                "reset() Start Case",
                                 variant="primary",
                                 elem_id="start-case",
                                 elem_classes=["px-primary-button", "px-full-width"],
                             )
-                            gr.HTML("<div class='px-toolbar-note'>Start here. This resets the environment and gives you the first case observation.</div>")
+                            with gr.Row():
+                                state_button = gr.Button(
+                                    "state() View State",
+                                    elem_id="state-case",
+                                    elem_classes=["px-accent-button"],
+                                )
+                                close_button = gr.Button(
+                                    "close() End Session",
+                                    elem_id="close-case",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                            gr.HTML("<div class='px-toolbar-note'>Use reset() to start, state() to inspect the current state, step() to send an action, and close() to end the session.</div>")
                         status = gr.HTML(_status_html("Ready to start a case."))
                     with gr.Column(scale=6):
                         session_summary = gr.HTML(
@@ -1080,7 +1310,7 @@ def _build_gradio_demo() -> gr.Blocks:
                 with gr.Row(equal_height=True):
                     with gr.Column(scale=4):
                         with gr.Group(elem_classes=["px-card", "px-code-panel"]):
-                            gr.Markdown("### Action builder\nUse quick buttons or edit the JSON action directly.")
+                            gr.Markdown("### Action builder\nUse quick buttons or edit the JSON action directly, then run `step()`.")
                             action_json = gr.Code(
                                 value=_reset_action_template(),
                                 language="json",
@@ -1135,8 +1365,20 @@ def _build_gradio_demo() -> gr.Blocks:
                                 elem_id="submit-case",
                                 elem_classes=["px-secondary-button"],
                             )
+                            gr.HTML(
+                                """
+                                <ul class="px-ops-list">
+                                  <li><strong>Inspect case</strong>Load the case summary, visible records, and current workspace.</li>
+                                  <li><strong>Search policy</strong>Look up the policy rule that should guide the next step.</li>
+                                  <li><strong>Ask legal to review</strong>Send the case to legal when the action needs formal review.</li>
+                                  <li><strong>Message user</strong>Ask the requester for identity proof or missing facts.</li>
+                                  <li><strong>Check my work</strong>Run a self-review before the final answer.</li>
+                                  <li><strong>Submit</strong>Finish the case when you have enough evidence.</li>
+                                </ul>
+                                """
+                            )
                             step_button = gr.Button(
-                                "Send Action",
+                                "step() Send Action",
                                 variant="primary",
                                 elem_id="send-action",
                                 elem_classes=["px-primary-button", "px-full-width"],
@@ -1162,6 +1404,16 @@ def _build_gradio_demo() -> gr.Blocks:
                 reset_button.click(
                     fn=_gradio_reset_episode,
                     inputs=[task_id, seed, session_env],
+                    outputs=[session_env, status, session_summary, response_json, action_json],
+                )
+                state_button.click(
+                    fn=_gradio_view_state,
+                    inputs=[session_env],
+                    outputs=[session_env, status, session_summary, response_json],
+                )
+                close_button.click(
+                    fn=_gradio_close_episode,
+                    inputs=[session_env],
                     outputs=[session_env, status, session_summary, response_json, action_json],
                 )
                 step_button.click(
@@ -1197,6 +1449,16 @@ def _build_gradio_demo() -> gr.Blocks:
                     outputs=action_json,
                 )
             with gr.Tab("Results"):
+                gr.HTML(
+                    f"""
+                    <div class="px-shell px-shell-compact">
+                      <div class="px-help-card">
+                        <h4>Checkpoint status</h4>
+                        <p>{escape(sft_caption)}</p>
+                      </div>
+                    </div>
+                    """
+                )
                 gr.HTML(_build_results_html(payload))
             with gr.Tab("API"):
                 gr.HTML(_build_api_html())
@@ -1547,7 +1809,7 @@ def dashboard() -> str:
             _gradio_metric_card(
                 "Trained model",
                 sft_score,
-                "Not ready yet" if payload["sft_score"] is None else "Trained model result",
+                "Current saved checkpoint result" if payload["sft_score"] is not None else "Checkpoint eval not available yet",
             ),
         ]
     )
@@ -1563,18 +1825,46 @@ def dashboard() -> str:
       <body>
         <div class="px-shell">
           <section class="px-hero">
-            <div class="px-eyebrow">View results</div>
-            <h1>PrivacyOps-X results</h1>
-            <p class="px-lead">
-              This page shows the main results of the project.
-              It shows scores, plots, and what the numbers mean.
-            </p>
-            <div class="px-dashboard-actions">
-              <a class="px-link-button px-primary" href="/playground/" title="Open the live benchmark playground.">Open playground</a>
-              <a class="px-link-button px-secondary-hero" href="/docs" title="Open the API documentation.">Open docs</a>
-              <a class="px-link-button" href="/judge-report" title="Read the judge-facing summary JSON.">Project summary JSON</a>
-              <a class="px-link-button" href="/curriculum" title="See the self-improvement curriculum JSON.">Curriculum JSON</a>
-              <a class="px-link-button" href="/schema" title="Open the typed schema page.">Schema</a>
+            <div>
+              {_page_nav_html("results")}
+              <div class="px-eyebrow">View results</div>
+              <h1>PrivacyOps-X results</h1>
+              <p class="px-lead">
+                This page shows the main results of the project.
+                It shows scores, plots, and what the numbers mean.
+              </p>
+              <div class="px-dashboard-actions">
+                <a class="px-link-button px-primary" href="/playground/" title="Open the live benchmark playground.">Open playground</a>
+                <a class="px-link-button px-secondary-hero" href="/docs" title="Open the API documentation.">Open docs</a>
+                <a class="px-link-button" href="/judge-report" title="Read the judge-facing summary JSON.">Project summary JSON</a>
+                <a class="px-link-button" href="/curriculum" title="See the self-improvement curriculum JSON.">Curriculum JSON</a>
+                <a class="px-link-button" href="/schema" title="Open the typed schema page.">Schema</a>
+              </div>
+            </div>
+            <div class="px-card px-summary-card">
+              <h3>How to use this page</h3>
+              <ul>
+                <li><strong>First:</strong> compare the score cards to see the gap between weak and strong behavior.</li>
+                <li><strong>Second:</strong> read the plots to see policy comparison and improvement over time.</li>
+                <li><strong>Third:</strong> open docs or schema if you want the raw benchmark data.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="px-section">
+            <div class="px-grid px-mini-steps">
+              <article class="px-mini-step">
+                <strong>Read the score cards</strong>
+                <p>These cards show the starting point, the teacher target, and the improvement result.</p>
+              </article>
+              <article class="px-mini-step">
+                <strong>Read the plots</strong>
+                <p>The charts show the same story visually so judges can understand the result quickly.</p>
+              </article>
+              <article class="px-mini-step">
+                <strong>Open raw endpoints</strong>
+                <p>Use the JSON and docs links when you want the exact benchmark structures behind the UI.</p>
+              </article>
             </div>
           </section>
 
@@ -1583,6 +1873,7 @@ def dashboard() -> str:
           </section>
 
           <section class="px-section">
+            <div class="px-eyebrow">View results</div>
             <div class="px-section-head">
               <h2>Plots</h2>
               <p>These plots show benchmark performance and improvement.</p>
