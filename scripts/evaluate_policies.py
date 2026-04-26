@@ -17,7 +17,7 @@ from server.env import PrivacyOpsXEnvironment
 from server.fixtures import load_tasks
 from server.teacher import build_teacher_plan
 
-from shared import build_user_prompt, ensure_parent, extract_json
+from shared import SYSTEM_PROMPT, build_user_prompt, ensure_parent, extract_json
 
 
 FIELD_CHOICES = {
@@ -51,6 +51,48 @@ FIELD_CHOICES = {
     "escalation_required": [True, False],
 }
 
+ACTION_KEY_ALIASES = {
+    "action": "action_type",
+    "type": "action_type",
+    "name": "action_type",
+    "record_id": "target_id",
+    "article_id": "target_id",
+    "policy_id": "target_id",
+    "policy_article_id": "target_id",
+    "target": "target_id",
+    "field": "field_name",
+    "value": "field_value",
+    "message": "content",
+    "reply": "content",
+    "note": "content",
+    "text": "content",
+    "review": "reviewer",
+}
+
+ACTION_TYPE_ALIASES = {
+    "open_policy": "open_policy_article",
+    "open_article": "open_policy_article",
+    "set_field": "set_case_field",
+    "update_field": "set_case_field",
+    "update_workspace": "set_case_field",
+    "reply": "draft_reply",
+    "review": "request_review",
+}
+
+ACTION_ALLOWED_FIELDS = {
+    "inspect_case": {"action_type", "confidence"},
+    "open_record": {"action_type", "target_id", "confidence"},
+    "search_policy": {"action_type", "query", "confidence"},
+    "open_policy_article": {"action_type", "target_id", "confidence"},
+    "set_case_field": {"action_type", "field_name", "field_value", "confidence"},
+    "add_internal_note": {"action_type", "content", "confidence"},
+    "draft_reply": {"action_type", "content", "confidence"},
+    "message_requester": {"action_type", "content", "confidence"},
+    "request_review": {"action_type", "reviewer", "confidence"},
+    "self_review": {"action_type", "confidence"},
+    "submit": {"action_type", "confidence"},
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -63,6 +105,40 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max-new-tokens", type=int, default=192)
     return parser.parse_args()
+
+
+def normalize_action_payload(payload: Any) -> dict[str, Any]:
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        return {"action_type": "submit"}
+
+    if "next_action" in payload and isinstance(payload["next_action"], dict):
+        payload = payload["next_action"]
+    if "action" in payload and isinstance(payload["action"], dict):
+        payload = payload["action"]
+
+    normalized: dict[str, Any] = {}
+    for key, value in payload.items():
+        canonical_key = ACTION_KEY_ALIASES.get(key, key)
+        if canonical_key not in normalized:
+            normalized[canonical_key] = value
+
+    action_type = normalized.get("action_type")
+    if isinstance(action_type, str):
+        normalized["action_type"] = ACTION_TYPE_ALIASES.get(action_type, action_type)
+    else:
+        return {"action_type": "submit"}
+
+    allowed_fields = ACTION_ALLOWED_FIELDS.get(normalized["action_type"])
+    if not allowed_fields:
+        return {"action_type": "submit"}
+
+    return {
+        key: value
+        for key, value in normalized.items()
+        if key in allowed_fields and value is not None
+    }
 
 
 def sample_random_action(
@@ -171,10 +247,7 @@ class LocalCheckpointPolicy:
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are an agent operating a privacy operations benchmark. "
-                    "Return exactly one compact JSON object describing the next action."
-                ),
+                "content": SYSTEM_PROMPT,
             },
             {"role": "user", "content": build_user_prompt(task_id, observation, history)},
         ]
@@ -199,7 +272,7 @@ class LocalCheckpointPolicy:
         generated = outputs[0][inputs["input_ids"].shape[-1] :]
         text = self.tokenizer.decode(generated, skip_special_tokens=True)
         try:
-            return extract_json(text)
+            return normalize_action_payload(extract_json(text))
         except Exception:
             return {"action_type": "submit"}
 
@@ -239,7 +312,12 @@ def main() -> None:
                     action_payload = sample_random_action(observation, task, rng)
                 else:
                     action_payload = local_model.next_action(task_id, observation, history)
-                action = PrivacyOpsAction(**action_payload)
+                action_payload = normalize_action_payload(action_payload)
+                try:
+                    action = PrivacyOpsAction(**action_payload)
+                except Exception:
+                    action_payload = {"action_type": "submit"}
+                    action = PrivacyOpsAction(**action_payload)
                 history.append(json.dumps(action_payload, sort_keys=True))
                 observation = env.step(action)
 

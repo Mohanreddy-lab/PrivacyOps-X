@@ -8,6 +8,7 @@ outputs/logs/*
 outputs/evals/*
 outputs/plots/*.png
 outputs/checkpoints/
+outputs/screenshots/
 !outputs/logs/.gitkeep
 !outputs/evals/.gitkeep
 !outputs/plots/.gitkeep
