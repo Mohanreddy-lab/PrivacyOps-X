@@ -425,6 +425,7 @@ def _shell_css() -> str:
     .px-card h2, .px-card h3 {margin-top: 0;}
     .px-card p, .px-card li {color: #9ab0c4;}
     .px-summary-card ul, .px-task-card ul, .px-card ul {margin: 12px 0 0; padding-left: 18px;}
+    .px-shell-compact {max-width: none; margin: 0; padding: 0; gap: 16px;}
     .px-eyebrow, .px-chip, .px-kicker {
       display: inline-flex;
       align-items: center;
@@ -456,18 +457,53 @@ def _shell_css() -> str:
       font-weight: 700;
     }
     .px-link-button.px-primary {background: #4fd1c5; color: #08212a; border-color: transparent;}
+    .px-link-button.px-secondary-hero {background: #ff8f87; color: #08131d; border-color: transparent;}
     .px-section-head {display: grid; gap: 6px; margin-bottom: 2px;}
     .px-section-head h2 {margin: 0; color: #eef4f8;}
     .px-section-head p {margin: 0; color: #9ab0c4;}
     .px-metrics-grid {grid-template-columns: repeat(4, minmax(0, 1fr));}
     .px-story-grid, .px-task-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-guide-grid {grid-template-columns: repeat(3, minmax(0, 1fr));}
     .px-two-up {grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-steps-grid {grid-template-columns: repeat(4, minmax(0, 1fr));}
     .px-metric-value {font-size: 2rem; font-weight: 800; margin-top: 10px;}
     .px-step {
       width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
       background: #163041; color: #8ae4dc; font-weight: 800; margin-bottom: 12px;
     }
     .px-plot {width: 100%; border-radius: 16px; border: 1px solid #22384d; margin-top: 12px;}
+    .px-tip-grid {display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-tip-card {min-height: 100%;}
+    .px-bulletless {list-style: none; padding-left: 0 !important; margin: 0;}
+    .px-bulletless li {margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: #132536;}
+    .px-button-note {margin-top: 8px; font-size: 0.92rem; color: #8ae4dc;}
+    .px-inline-code {font-family: Consolas, "SFMono-Regular", monospace;}
+    .px-help-grid {display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr));}
+    .px-help-card {border: 1px solid #22384d; border-radius: 18px; padding: 16px; background: #10202d;}
+    .px-help-card h4 {margin: 0 0 8px; color: #eef4f8;}
+    .px-help-card p {margin: 0; color: #9ab0c4;}
+    .px-toolbar-note {margin-top: 6px; color: #8ae4dc; font-size: 0.9rem;}
+    .px-soft-label {font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8ae4dc;}
+    .px-run-grid {display: grid; gap: 18px; grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.25fr);}
+    .px-button-grid {display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-button-grid .gr-button, .px-wide-button .gr-button {min-height: 54px !important; border-radius: 14px !important;}
+    .px-wide-button {grid-column: 1 / -1;}
+    .px-primary-button .gr-button {background: linear-gradient(135deg, #ff7c32, #ff5a00) !important; color: #fff !important; border: 0 !important;}
+    .px-secondary-button .gr-button {background: #5a5a67 !important; color: #fff !important; border: 1px solid #6f7080 !important;}
+    .px-accent-button .gr-button {background: linear-gradient(135deg, #4fd1c5, #7ce8de) !important; color: #08212a !important; border: 0 !important;}
+    .px-field, .px-code-panel, .px-html-panel {border-radius: 18px;}
+    .px-code-panel .cm-editor, .px-code-panel .cm-scroller {min-height: 190px;}
+    .px-demo-head {margin-bottom: 8px;}
+    .px-demo-head h2 {margin: 0 0 8px;}
+    .px-demo-head p {margin: 0;}
+    .px-full-width {width: 100%;}
+    .px-tab-note {margin-top: 6px; color: #9ab0c4;}
+    .px-home-note {color: #8ae4dc; font-size: 0.95rem; margin-top: 10px;}
+    .px-dashboard-grid {grid-template-columns: repeat(5, minmax(0, 1fr));}
+    .px-dashboard-actions {display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px;}
+    .px-score-table {width: 100%; border-collapse: collapse;}
+    .px-score-table th, .px-score-table td {text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08);}
+    .px-score-table th {color: #9ab0c4; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.74rem;}
     .px-status {
       border-radius: 12px;
       padding: 12px 14px;
@@ -488,8 +524,25 @@ def _shell_css() -> str:
     .px-session-grid span {color: #eef4f8;}
     .px-note {border-left: 3px solid #4fd1c5; padding-left: 12px; color: #eef4f8;}
     .px-note-muted {border-left-color: #365065; color: #9ab0c4;}
+    .gradio-container .gr-block, .gradio-container .gr-panel, .gradio-container .gr-group {
+      border-color: #22384d !important;
+      background: #0f1d2a !important;
+    }
+    .gradio-container .gr-form, .gradio-container .gr-box, .gradio-container .gr-accordion {
+      border-color: #22384d !important;
+      background: #0f1d2a !important;
+    }
+    .gradio-container button, .gradio-container .gr-button {
+      transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+    }
+    .gradio-container button:hover, .gradio-container .gr-button:hover,
+    .px-link-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.24);
+    }
     @media (max-width: 1024px) {
-      .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid {grid-template-columns: 1fr;}
+      .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid, .px-guide-grid, .px-steps-grid, .px-tip-grid, .px-help-grid, .px-run-grid, .px-dashboard-grid {grid-template-columns: 1fr;}
+      .px-button-grid {grid-template-columns: 1fr;}
     }
     """
 
@@ -527,7 +580,7 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
             _gradio_metric_card(
                 "Self-improvement",
                 f"{_format_score(payload['baseline_score'])} to {_format_score(payload['improved_score'])}",
-                "The same agent gets better after feedback.",
+                "The same agent gets better after feedback and retry.",
             ),
             _gradio_metric_card(
                 "Trained checkpoint",
@@ -536,6 +589,36 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
             ),
         ]
     )
+    workflow_cards = """
+      <section class="px-section">
+        <div class="px-section-head">
+          <h2>How the project works</h2>
+          <p>This is the full story of the benchmark in four simple steps.</p>
+        </div>
+        <div class="px-grid px-steps-grid">
+          <article class="px-card">
+            <div class="px-step">1</div>
+            <h3>Pick a privacy case</h3>
+            <p>Choose a task such as data access, account deletion, guardian authority, legal hold, or cross-border recovery.</p>
+          </article>
+          <article class="px-card">
+            <div class="px-step">2</div>
+            <h3>Let the agent act</h3>
+            <p>The agent must inspect records, search policy, message the requester, ask reviewers, and then submit a final answer.</p>
+          </article>
+          <article class="px-card">
+            <div class="px-step">3</div>
+            <h3>Watch the state change</h3>
+            <p>Every step updates visible records, workspace fields, risk, milestones, and reviewer findings.</p>
+          </article>
+          <article class="px-card">
+            <div class="px-step">4</div>
+            <h3>Read the score</h3>
+            <p>The benchmark returns safety, policy use, legal handling, communication quality, and efficiency signals.</p>
+          </article>
+        </div>
+      </section>
+    """
     return f"""
     <div class="px-shell">
       <section class="px-hero">
@@ -548,12 +631,13 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
             ask for review, and give a safe final answer.
           </p>
           <div class="px-link-row">
-            <a class="px-link-button px-primary" href="/playground/">Open playground</a>
-            <a class="px-link-button px-primary" href="/dashboard">View results</a>
-            <a class="px-link-button" href="/docs">API docs</a>
-            <a class="px-link-button" href="/schema">Schema</a>
-            <a class="px-link-button" href="/judge-report">Project summary</a>
+            <a class="px-link-button px-primary" href="/playground/" title="Open the live playground and run the benchmark step by step.">Open playground</a>
+            <a class="px-link-button px-secondary-hero" href="/dashboard" title="Open the benchmark scores, plots, and final result summary.">View results</a>
+            <a class="px-link-button" href="/docs" title="Open the API documentation for reset, step, and state endpoints.">API docs</a>
+            <a class="px-link-button" href="/schema" title="See the exact JSON schema for actions, observations, and state.">Schema</a>
+            <a class="px-link-button" href="/judge-report" title="Read the judge-facing summary of the benchmark and training pipeline.">Project summary</a>
           </div>
+          <div class="px-home-note">Tip: start with the playground, then open the dashboard to understand how the benchmark scores the agent.</div>
         </div>
         <div class="px-card px-summary-card">
           <h3>What this project does</h3>
@@ -570,6 +654,8 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
         {metrics}
       </section>
 
+      {workflow_cards}
+
       <section class="px-section">
         <div class="px-section-head">
           <h2>Benchmark cases</h2>
@@ -585,7 +671,7 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
           <h2>What the user gets back</h2>
           <p>After each step, the system clearly shows the result.</p>
         </div>
-        <div class="px-grid px-two-up">
+        <div class="px-grid px-guide-grid">
           <article class="px-card">
             <h3>What the agent can do</h3>
             <ul>
@@ -600,6 +686,14 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
               <li>Case summary, fields, records, and policy text</li>
               <li>User messages, review results, milestones, risk score, and steps left</li>
               <li>Scores, reports, plots, datasets, and training files</li>
+            </ul>
+          </article>
+          <article class="px-card">
+            <h3>Why the benchmark matters</h3>
+            <ul>
+              <li>It measures real operational behavior, not only fluent language.</li>
+              <li>It makes failures easy to inspect and improve.</li>
+              <li>It supports both evaluation and model training.</li>
             </ul>
           </article>
         </div>
@@ -672,6 +766,81 @@ def _build_api_html() -> str:
         </article>
       </section>
     </div>
+    """
+
+
+def _build_playground_intro_html() -> str:
+    return """
+    <div class="px-shell px-shell-compact">
+      <div class="px-demo-head">
+        <div class="px-eyebrow">Run Demo</div>
+        <h2>Live benchmark playground</h2>
+        <p>Use this page to understand the whole project and run one privacy case step by step.</p>
+      </div>
+      <div class="px-help-grid">
+        <div class="px-help-card">
+          <h4>What this page proves</h4>
+          <p>The playground shows how the agent reads a case, takes typed actions, and earns a score based on safety and policy use.</p>
+        </div>
+        <div class="px-help-card">
+          <h4>How to use it</h4>
+          <p>Pick a task, start the case, use the quick buttons or edit JSON, then read the live result and session summary.</p>
+        </div>
+        <div class="px-help-card">
+          <h4>What to watch</h4>
+          <p>Focus on risk score, visible records, milestone progress, reviewer findings, and the final action path.</p>
+        </div>
+      </div>
+    </div>
+    """
+
+
+def _gradio_head() -> str:
+    tooltip_map = {
+        "task-picker": "Choose which privacy benchmark case to run.",
+        "seed-input": "Use a seed to replay the same deterministic case variant.",
+        "start-case": "Reset the environment and start a fresh case.",
+        "inspect-case": "Load the case summary and current workspace details.",
+        "search-policy": "Look up policy guidance for the current issue.",
+        "request-legal-review": "Ask legal review to check whether the action is safe and allowed.",
+        "message-user": "Draft a message to the requester for verification or clarification.",
+        "self-review": "Ask the agent to review its own work before submitting.",
+        "submit-case": "Submit the current resolution and finish the case.",
+        "send-action": "Run the JSON action shown in the editor.",
+        "action-json": "Edit the exact action payload that will be sent to the environment.",
+        "latest-result": "See the newest observation, reward, and state returned by the environment.",
+        "session-summary": "Quick view of task status, risk, milestones, and latest note.",
+        "example-actions": "Insert a ready-made action template into the JSON editor.",
+    }
+    tooltip_json = json.dumps(tooltip_map)
+    return f"""
+    <script>
+    (() => {{
+      const tooltipMap = {tooltip_json};
+      const applyTooltips = () => {{
+        Object.entries(tooltipMap).forEach(([id, text]) => {{
+          const root = document.getElementById(id);
+          if (!root) return;
+          root.setAttribute("title", text);
+          root.setAttribute("aria-label", text);
+          root.querySelectorAll("button, textarea, input, select, .cm-editor, .cm-content, .wrap, label, .gr-button").forEach((el) => {{
+            el.setAttribute("title", text);
+            el.setAttribute("aria-label", text);
+          }});
+        }});
+      }};
+      const run = () => {{
+        applyTooltips();
+        const observer = new MutationObserver(() => applyTooltips());
+        observer.observe(document.body, {{ childList: true, subtree: true }});
+      }};
+      if (document.readyState === "loading") {{
+        document.addEventListener("DOMContentLoaded", run);
+      }} else {{
+        run();
+      }}
+    }})();
+    </script>
     """
 
 
@@ -870,52 +1039,124 @@ def _build_gradio_demo() -> gr.Blocks:
         title="PrivacyOps-X",
         analytics_enabled=False,
     ) as demo:
+        gr.HTML(_gradio_head())
         with gr.Tabs():
             with gr.Tab("Run Demo"):
-                gr.Markdown(
-                    """
-                    ### Live benchmark playground
-                    Use this tab to run the live demo.
-                    Pick a task, start the case, send one action, and read the JSON result.
-                    """
-                )
-                with gr.Row():
+                gr.HTML(_build_playground_intro_html())
+                with gr.Row(equal_height=True):
                     with gr.Column(scale=4):
+                        with gr.Group(elem_classes=["px-card", "px-field"]):
+                            gr.Markdown("### Case setup\nPick a case, choose a seed, and start the environment.")
+                            task_id = gr.Dropdown(
+                                choices=task_choices,
+                                value=task_choices[0][1],
+                                label="Task",
+                                info="Choose the benchmark case you want to run.",
+                                elem_id="task-picker",
+                                elem_classes=["px-field"],
+                            )
+                            seed = gr.Number(
+                                value=0,
+                                precision=0,
+                                label="Seed",
+                                info="Use the same seed to replay the same task variant.",
+                                elem_id="seed-input",
+                                elem_classes=["px-field"],
+                            )
+                            reset_button = gr.Button(
+                                "Start Case",
+                                variant="primary",
+                                elem_id="start-case",
+                                elem_classes=["px-primary-button", "px-full-width"],
+                            )
+                            gr.HTML("<div class='px-toolbar-note'>Start here. This resets the environment and gives you the first case observation.</div>")
                         status = gr.HTML(_status_html("Ready to start a case."))
-                        task_id = gr.Dropdown(
-                            choices=task_choices,
-                            value=task_choices[0][1],
-                            label="Task",
-                        )
-                        seed = gr.Number(value=0, precision=0, label="Seed")
-                        reset_button = gr.Button("Start Case", variant="primary")
-                        action_json = gr.Code(
-                            value=_reset_action_template(),
-                            language="json",
-                            label="Action JSON",
-                            lines=16,
-                        )
-                        with gr.Row():
-                            inspect_button = gr.Button("Inspect case")
-                            search_button = gr.Button("Search policy")
-                            review_button = gr.Button("Ask legal to review")
-                        with gr.Row():
-                            requester_button = gr.Button("Message user")
-                            self_review_button = gr.Button("Check my work")
-                            submit_button = gr.Button("Submit")
-                        step_button = gr.Button("Send Action", variant="primary")
                     with gr.Column(scale=6):
-                        session_summary = gr.HTML(_session_summary_html(None, None))
-                        response_json = gr.Code(
-                            value="Press \"Start Case\" to begin.",
-                            language="json",
-                            label="Latest result",
-                            lines=28,
+                        session_summary = gr.HTML(
+                            _session_summary_html(None, None),
+                            elem_id="session-summary",
+                            elem_classes=["px-html-panel"],
                         )
+                with gr.Row(equal_height=True):
+                    with gr.Column(scale=4):
+                        with gr.Group(elem_classes=["px-card", "px-code-panel"]):
+                            gr.Markdown("### Action builder\nUse quick buttons or edit the JSON action directly.")
+                            action_json = gr.Code(
+                                value=_reset_action_template(),
+                                language="json",
+                                label="Action JSON",
+                                lines=16,
+                                elem_id="action-json",
+                                elem_classes=["px-code-panel"],
+                            )
+                            gr.HTML(
+                                """
+                                <div class="px-tip-grid">
+                                  <div class="px-help-card">
+                                    <h4>Fast path</h4>
+                                    <p>Use the quick action buttons below if you want a guided demo flow.</p>
+                                  </div>
+                                  <div class="px-help-card">
+                                    <h4>Advanced path</h4>
+                                    <p>Edit the JSON yourself if you want full control over the typed action payload.</p>
+                                  </div>
+                                </div>
+                                """
+                            )
+                            with gr.Row():
+                                inspect_button = gr.Button(
+                                    "Inspect case",
+                                    elem_id="inspect-case",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                                search_button = gr.Button(
+                                    "Search policy",
+                                    elem_id="search-policy",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                            review_button = gr.Button(
+                                "Ask legal to review",
+                                elem_id="request-legal-review",
+                                elem_classes=["px-secondary-button"],
+                            )
+                            with gr.Row():
+                                requester_button = gr.Button(
+                                    "Message user",
+                                    elem_id="message-user",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                                self_review_button = gr.Button(
+                                    "Check my work",
+                                    elem_id="self-review",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                            submit_button = gr.Button(
+                                "Submit",
+                                elem_id="submit-case",
+                                elem_classes=["px-secondary-button"],
+                            )
+                            step_button = gr.Button(
+                                "Send Action",
+                                variant="primary",
+                                elem_id="send-action",
+                                elem_classes=["px-primary-button", "px-full-width"],
+                            )
+                    with gr.Column(scale=6):
+                        with gr.Group(elem_classes=["px-card", "px-code-panel"]):
+                            gr.Markdown("### Live environment output\nThis panel shows what the benchmark returns after each step.")
+                            response_json = gr.Code(
+                                value="Press \"Start Case\" to begin.",
+                                language="json",
+                                label="Latest result",
+                                lines=28,
+                                elem_id="latest-result",
+                                elem_classes=["px-code-panel"],
+                            )
                 gr.Examples(
                     examples=action_examples,
                     inputs=[action_json],
                     label="Example actions",
+                    elem_id="example-actions",
                 )
                 session_env = gr.State(value=None)
                 reset_button.click(
@@ -1297,6 +1538,19 @@ def dashboard() -> str:
         if payload["self_plot"]
         else "<div class='placeholder'>Self-improvement plot not available yet.</div>"
     )
+    metric_cards = "".join(
+        [
+            _gradio_metric_card("Random agent", random_score, "Low score baseline"),
+            _gradio_metric_card("Teacher agent", teacher_score, "High score reference"),
+            _gradio_metric_card("Baseline", baseline_score, "Score before improvement"),
+            _gradio_metric_card("Improved", improved_score, "Score after improvement"),
+            _gradio_metric_card(
+                "Trained model",
+                sft_score,
+                "Not ready yet" if payload["sft_score"] is None else "Trained model result",
+            ),
+        ]
+    )
     return f"""
     <!doctype html>
     <html lang="en">
@@ -1304,254 +1558,53 @@ def dashboard() -> str:
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>PrivacyOps-X Judge Dashboard</title>
-        <style>
-          :root {{
-            --bg: #07131f;
-            --panel: rgba(8, 20, 32, 0.9);
-            --panel-2: rgba(14, 30, 45, 0.95);
-            --ink: #eef4f8;
-            --muted: #9db2c4;
-            --teal: #72e6d1;
-            --amber: #ffbf70;
-            --rose: #ff8a80;
-            --blue: #7db8ff;
-            --line: rgba(132, 171, 196, 0.22);
-          }}
-          body {{
-            margin: 0;
-            color: var(--ink);
-            font-family: "Trebuchet MS", "Lucida Sans Unicode", sans-serif;
-            background:
-              radial-gradient(circle at top left, rgba(114, 230, 209, 0.14), transparent 30%),
-              radial-gradient(circle at 88% 10%, rgba(125, 184, 255, 0.14), transparent 24%),
-              linear-gradient(160deg, #051019 0%, #091827 45%, #11263a 100%);
-          }}
-          * {{ box-sizing: border-box; }}
-          .shell {{
-            width: min(1220px, calc(100vw - 28px));
-            margin: 0 auto;
-            padding: 28px 0 42px;
-          }}
-          .hero, .card {{
-            border: 1px solid var(--line);
-            background: var(--panel);
-            border-radius: 24px;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
-          }}
-          .hero {{
-            padding: 28px;
-          }}
-          .eyebrow {{
-            display: inline-flex;
-            padding: 6px 12px;
-            border-radius: 999px;
-            border: 1px solid rgba(114, 230, 209, 0.22);
-            background: rgba(114, 230, 209, 0.08);
-            color: var(--teal);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            font-size: 0.8rem;
-          }}
-          h1 {{
-            margin: 14px 0 10px;
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-family: Georgia, "Times New Roman", serif;
-          }}
-          p {{
-            color: var(--muted);
-            line-height: 1.7;
-          }}
-          .actions {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 18px;
-          }}
-          .button {{
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 16px;
-            border-radius: 14px;
-            text-decoration: none;
-            color: var(--ink);
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.12);
-            font-weight: 700;
-          }}
-          .button.primary {{
-            background: linear-gradient(135deg, var(--teal), #95f4e4);
-            color: #061018;
-            border-color: transparent;
-          }}
-          .grid {{
-            display: grid;
-            gap: 18px;
-            margin-top: 22px;
-          }}
-          .stats {{
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-          }}
-          .card {{
-            padding: 20px;
-          }}
-          .label {{
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            font-size: 0.76rem;
-          }}
-          .value {{
-            margin-top: 8px;
-            font-size: 2rem;
-            font-weight: 800;
-          }}
-          .value small {{
-            display: block;
-            font-size: 0.92rem;
-            color: var(--muted);
-            margin-top: 6px;
-          }}
-          .section {{
-            margin-top: 30px;
-          }}
-          .section h2 {{
-            margin: 0 0 14px;
-            color: var(--amber);
-            text-transform: uppercase;
-            letter-spacing: 0.14em;
-            font-size: 0.9rem;
-          }}
-          .split {{
-            display: grid;
-            gap: 18px;
-            grid-template-columns: 1fr 1fr;
-          }}
-          .stack {{
-            display: grid;
-            gap: 18px;
-            grid-template-columns: 1fr 1fr;
-          }}
-          .plot {{
-            overflow: hidden;
-          }}
-          .plot img {{
-            display: block;
-            width: 100%;
-            border-radius: 18px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: #051019;
-          }}
-          .placeholder {{
-            min-height: 240px;
-            display: grid;
-            place-items: center;
-            border-radius: 18px;
-            border: 1px dashed rgba(255,255,255,0.16);
-            color: var(--muted);
-            background: var(--panel-2);
-          }}
-          .trajectory {{
-            margin: 0;
-            padding-left: 22px;
-          }}
-          .trajectory li {{
-            margin-bottom: 10px;
-            color: var(--ink);
-          }}
-          code {{
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 8px;
-            background: rgba(125, 184, 255, 0.08);
-            color: #d8ebff;
-            white-space: pre-wrap;
-            word-break: break-word;
-          }}
-          table {{
-            width: 100%;
-            border-collapse: collapse;
-          }}
-          th, td {{
-            text-align: left;
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-          }}
-          th {{
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.74rem;
-          }}
-          .muted {{ color: var(--muted); }}
-          @media (max-width: 980px) {{
-            .stats, .split, .stack {{
-              grid-template-columns: 1fr;
-            }}
-          }}
-        </style>
+        <style>{_shell_css()}</style>
       </head>
       <body>
-        <div class="shell">
-          <section class="hero">
-            <div class="eyebrow">View results</div>
+        <div class="px-shell">
+          <section class="px-hero">
+            <div class="px-eyebrow">View results</div>
             <h1>PrivacyOps-X results</h1>
-            <p>
+            <p class="px-lead">
               This page shows the main results of the project.
               It shows scores, plots, and what the numbers mean.
             </p>
-            <div class="actions">
-              <a class="button primary" href="/docs">Open docs</a>
-              <a class="button" href="/judge-report">Project summary JSON</a>
-              <a class="button" href="/curriculum">Curriculum JSON</a>
-              <a class="button" href="/schema">Schema</a>
+            <div class="px-dashboard-actions">
+              <a class="px-link-button px-primary" href="/playground/" title="Open the live benchmark playground.">Open playground</a>
+              <a class="px-link-button px-secondary-hero" href="/docs" title="Open the API documentation.">Open docs</a>
+              <a class="px-link-button" href="/judge-report" title="Read the judge-facing summary JSON.">Project summary JSON</a>
+              <a class="px-link-button" href="/curriculum" title="See the self-improvement curriculum JSON.">Curriculum JSON</a>
+              <a class="px-link-button" href="/schema" title="Open the typed schema page.">Schema</a>
             </div>
           </section>
 
-          <section class="grid stats">
-            <article class="card">
-              <div class="label">Random agent</div>
-              <div class="value">{random_score}<small>low score</small></div>
-            </article>
-            <article class="card">
-              <div class="label">Teacher agent</div>
-              <div class="value">{teacher_score}<small>high score</small></div>
-            </article>
-            <article class="card">
-              <div class="label">Baseline</div>
-              <div class="value">{baseline_score}<small>score before improvement</small></div>
-            </article>
-            <article class="card">
-              <div class="label">Improved</div>
-              <div class="value">{improved_score}<small>score after improvement</small></div>
-            </article>
-            <article class="card">
-              <div class="label">Trained Model</div>
-              <div class="value">{sft_score}<small>{"not ready yet" if payload["sft_score"] is None else "trained model result"}</small></div>
-            </article>
+          <section class="px-grid px-dashboard-grid">
+            {metric_cards}
           </section>
 
-          <section class="section">
-            <h2>Plots</h2>
-            <div class="split">
-              <article class="card plot">
+          <section class="px-section">
+            <div class="px-section-head">
+              <h2>Plots</h2>
+              <p>These plots show benchmark performance and improvement.</p>
+            </div>
+            <div class="px-grid px-two-up">
+              <article class="px-card plot">
                 <h3>Policy comparison</h3>
-                <p class="muted">This plot compares a weak agent and a strong agent.</p>
+                <p>This plot compares a weak agent and a strong agent.</p>
                 {random_plot_html}
               </article>
-              <article class="card plot">
+              <article class="px-card plot">
                 <h3>Improvement over time</h3>
-                <p class="muted">This plot shows the agent getting better after feedback.</p>
+                <p>This plot shows the agent getting better after feedback.</p>
                 {self_plot_html}
               </article>
             </div>
           </section>
 
-          <section class="section">
+          <section class="px-section">
             <h2>What The Score Means</h2>
-            <article class="card">
-              <table>
+            <article class="px-card">
+              <table class="px-score-table">
                 <thead>
                   <tr><th>Metric</th><th>Meaning</th></tr>
                 </thead>
