@@ -8,33 +8,27 @@ client = TestClient(app)
 
 
 def test_root_endpoint_renders_homepage() -> None:
-    response = client.get("/")
-    assert response.status_code == 200
-    assert "PrivacyOps-X" in response.text
-    assert "/docs" in response.text
-    assert "Open Playground" in response.text
-    assert "Project in one view" in response.text
-    assert "How the benchmark works" in response.text
-    assert "Verified access with prompt injection" in response.text
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/playground"
 
 
 def test_playground_endpoint_renders_ui() -> None:
     response = client.get("/playground")
     assert response.status_code == 200
-    assert "Episode control" in response.text
+    assert "PrivacyOps-X" in response.text
+    assert "Live benchmark playground" in response.text
     assert "Action JSON" in response.text
-    assert "Reset episode" in response.text
-    assert "What this page proves" in response.text
-    assert "Pretty" not in response.text
-    assert 'output.textContent = title +' in response.text
-    assert 'JSON.stringify(payload, null, 2);' in response.text
+    assert "Start Case" in response.text
+    assert "Results" in response.text
+    assert "Schema" in response.text
+    assert "Gradio" in response.text or "gradio" in response.text
 
 
 def test_web_alias_renders_playground_ui() -> None:
-    response = client.get("/web")
-    assert response.status_code == 200
-    assert "Episode control" in response.text
-    assert "Live response" in response.text
+    response = client.get("/web", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/playground"
 
 
 def test_reset_endpoint_responds() -> None:
@@ -92,8 +86,8 @@ def test_dashboard_uses_fallback_content_when_artifacts_are_missing(monkeypatch)
     assert response.status_code == 200
     assert "0.3594" in response.text
     assert "0.9519" in response.text
-    assert "acct_eu_recovery_primary" in response.text
     assert "Random vs teacher comparison plot" in response.text
+    assert "What The Score Means" in response.text
 
 
 def test_malformed_json_payload_is_rejected() -> None:

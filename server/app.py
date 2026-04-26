@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+import gradio as gr
 from fastapi import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 from starlette.responses import Response
 from pydantic import BaseModel
@@ -360,6 +361,575 @@ def _load_dashboard_payload() -> dict[str, Any]:
     }
 
 
+def _task_catalog() -> list[dict[str, Any]]:
+    tasks = load_tasks()
+    catalog: list[dict[str, Any]] = []
+    for task_id, task in tasks.items():
+        variant = task["variants"][0]
+        catalog.append(
+            {
+                "task_id": task_id,
+                "difficulty": task["difficulty"].title(),
+                "subject": variant["subject"],
+                "preview": variant["preview"],
+                "records": len(task["records"]),
+                "reviewers": ", ".join(reviewer.title() for reviewer in task["required_reviewers"]),
+                "step_limit": task["step_limit"],
+            }
+        )
+    return catalog
+
+
+def _dump_json(payload: Any) -> str:
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def _gradio_metric_card(title: str, value: str, caption: str) -> str:
+    return f"""
+    <article class="px-card px-metric-card">
+      <div class="px-kicker">{escape(title)}</div>
+      <div class="px-metric-value">{escape(value)}</div>
+      <p>{escape(caption)}</p>
+    </article>
+    """
+
+
+def _build_overview_html(payload: dict[str, Any]) -> str:
+    task_cards = "".join(
+        f"""
+        <article class="px-card px-task-card">
+          <div class="px-chip">{escape(task['difficulty'])}</div>
+          <h3>{escape(task['subject'])}</h3>
+          <p>{escape(task['preview'])}</p>
+          <ul>
+            <li><strong>Task ID:</strong> <code>{escape(task['task_id'])}</code></li>
+            <li><strong>Records:</strong> {task['records']}</li>
+            <li><strong>Required reviewers:</strong> {escape(task['reviewers'])}</li>
+            <li><strong>Step budget:</strong> {task['step_limit']}</li>
+          </ul>
+        </article>
+        """
+        for task in _task_catalog()
+    )
+    trained_score = _format_score(payload["sft_score"])
+    metrics = "".join(
+        [
+            _gradio_metric_card(
+                "Random baseline",
+                _format_score(payload["random_score"]),
+                "A weak agent. This is the low score.",
+            ),
+            _gradio_metric_card(
+                "Teacher policy",
+                _format_score(payload["teacher_score"]),
+                "A strong agent. This is the high score.",
+            ),
+            _gradio_metric_card(
+                "Self-improvement",
+                f"{_format_score(payload['baseline_score'])} to {_format_score(payload['improved_score'])}",
+                "The same agent gets better after feedback.",
+            ),
+            _gradio_metric_card(
+                "Trained checkpoint",
+                trained_score,
+                "This shows the trained model score when it is ready.",
+            ),
+        ]
+    )
+    return f"""
+    <div class="px-shell">
+      <section class="px-hero">
+        <div>
+          <div class="px-eyebrow">Simple demo</div>
+          <h1>PrivacyOps-X</h1>
+          <p class="px-lead">
+            PrivacyOps-X is a test environment for privacy tasks.
+            It checks if an AI agent can read a case, look at records, check policy,
+            ask for review, and give a safe final answer.
+          </p>
+          <div class="px-link-row">
+            <a class="px-link-button px-primary" href="/dashboard">View results</a>
+            <a class="px-link-button" href="/docs">API docs</a>
+            <a class="px-link-button" href="/schema">Schema</a>
+            <a class="px-link-button" href="/judge-report">Project summary</a>
+          </div>
+        </div>
+        <div class="px-card px-summary-card">
+          <h3>What this project does</h3>
+          <ul>
+            <li>This is a privacy workflow demo, not just a chatbot.</li>
+            <li>The agent uses clear actions like <code>inspect_case</code>, <code>open_record</code>, and <code>request_review</code>.</li>
+            <li>Each step shows what changed, what risk was found, and what score the agent got.</li>
+            <li>The same system can test agents, improve them, and train models.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="px-grid px-metrics-grid">
+        {metrics}
+      </section>
+
+      <section class="px-section">
+        <div class="px-section-head">
+          <h2>Benchmark cases</h2>
+          <p>These are the privacy cases you can test here.</p>
+        </div>
+        <div class="px-grid px-task-grid">
+          {task_cards}
+        </div>
+      </section>
+
+      <section class="px-section">
+        <div class="px-section-head">
+          <h2>What the user gets back</h2>
+          <p>After each step, the system clearly shows the result.</p>
+        </div>
+        <div class="px-grid px-two-up">
+          <article class="px-card">
+            <h3>What the agent can do</h3>
+            <ul>
+              <li><code>inspect_case</code>, <code>open_record</code>, and <code>search_policy</code></li>
+              <li><code>message_requester</code>, <code>draft_reply</code>, and <code>add_internal_note</code></li>
+              <li><code>request_review</code>, <code>self_review</code>, and <code>submit</code></li>
+            </ul>
+          </article>
+          <article class="px-card">
+            <h3>What the system shows</h3>
+            <ul>
+              <li>Case summary, fields, records, and policy text</li>
+              <li>User messages, review results, milestones, risk score, and steps left</li>
+              <li>Scores, reports, plots, datasets, and training files</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </div>
+    """
+
+
+def _build_results_html(payload: dict[str, Any]) -> str:
+    trained_score = _format_score(payload["sft_score"])
+    return f"""
+    <div class="px-shell">
+      <section class="px-grid px-two-up">
+        <article class="px-card">
+          <h2>Policy comparison</h2>
+          <p>This plot compares a weak agent and a strong agent.</p>
+          <img class="px-plot" src="{payload['random_plot']}" alt="Random vs teacher comparison plot" />
+        </article>
+        <article class="px-card">
+          <h2>Improvement over time</h2>
+          <p>This plot shows the agent getting better after feedback.</p>
+          <img class="px-plot" src="{payload['self_plot']}" alt="Self-improvement curve plot" />
+        </article>
+      </section>
+
+      <section class="px-grid px-two-up">
+        <article class="px-card">
+          <h3>Current results</h3>
+          <ul>
+            <li><strong>Random:</strong> {_format_score(payload['random_score'])}</li>
+            <li><strong>Teacher:</strong> {_format_score(payload['teacher_score'])}</li>
+            <li><strong>Self-improvement:</strong> {_format_score(payload['baseline_score'])} to {_format_score(payload['improved_score'])}</li>
+            <li><strong>Trained model:</strong> {trained_score}</li>
+          </ul>
+        </article>
+        <article class="px-card">
+          <h3>What is included</h3>
+          <ul>
+            <li>An OpenEnv environment with <code>reset</code>, <code>step</code>, and <code>state</code></li>
+            <li>A training script and a Colab notebook</li>
+            <li>A loss curve and an improvement curve</li>
+            <li>A README, blog, Space, and demo page</li>
+          </ul>
+        </article>
+      </section>
+    </div>
+    """
+
+
+def _build_api_html() -> str:
+    return """
+    <div class="px-shell">
+      <section class="px-grid px-two-up">
+        <article class="px-card">
+          <h2>API pages</h2>
+          <ul>
+            <li><a href="/docs">/docs</a> shows the API docs</li>
+            <li><a href="/schema">/schema</a> shows the action, observation, and state format</li>
+            <li><a href="/envinfo">/envinfo</a> shows project info</li>
+            <li><a href="/dashboard">/dashboard</a> shows plots and scores</li>
+            <li><a href="/judge-report">/judge-report</a> shows a short summary</li>
+          </ul>
+        </article>
+        <article class="px-card">
+          <h2>Why this page uses Gradio</h2>
+          <p>
+            Gradio makes the project easier to read and use.
+            You can understand the project, try the live demo, and still keep the real API under it.
+          </p>
+        </article>
+      </section>
+    </div>
+    """
+
+
+def _status_html(message: str, *, kind: str = "ready") -> str:
+    kind_class = {
+        "ready": "px-status-ready",
+        "ok": "px-status-ok",
+        "error": "px-status-error",
+    }.get(kind, "px-status-ready")
+    return f"<div class='px-status {kind_class}'>{escape(message)}</div>"
+
+
+def _session_summary_html(observation: dict[str, Any] | None, state: dict[str, Any] | None) -> str:
+    if not observation or not state:
+        return """
+        <div class="px-card px-session-card">
+          <h3>Session summary</h3>
+          <p>Start a case to see the task, risk, fields, and latest result.</p>
+        </div>
+        """
+
+    workspace = state.get("workspace", {})
+    milestones = observation.get("milestones", [])
+    completed = sum(1 for item in milestones if item.get("status") == "complete")
+    latest = observation.get("last_action_result") or "No action result yet."
+    warning = observation.get("warning")
+    error = observation.get("error")
+    note = warning or error or "No active warnings."
+    risk = state.get("risk_score", observation.get("risk_score", 0.0))
+
+    return f"""
+    <div class="px-card px-session-card">
+      <h3>Session summary</h3>
+      <div class="px-grid px-session-grid">
+        <div><strong>Task</strong><span>{escape(str(observation.get('task_id', '')))}</span></div>
+        <div><strong>Difficulty</strong><span>{escape(str(observation.get('difficulty', '')))}</span></div>
+        <div><strong>Step count</strong><span>{escape(str(state.get('step_count', 0)))}</span></div>
+        <div><strong>Risk score</strong><span>{risk:.4f}</span></div>
+        <div><strong>Visible records</strong><span>{len(observation.get('visible_records', []))}</span></div>
+        <div><strong>Milestones complete</strong><span>{completed}/{len(milestones)}</span></div>
+        <div><strong>Request type</strong><span>{escape(str(workspace.get('request_type', 'unknown')))}</span></div>
+        <div><strong>Verification</strong><span>{escape(str(workspace.get('verification_status', 'unknown')))}</span></div>
+        <div><strong>Done</strong><span>{'yes' if state.get('done') else 'no'}</span></div>
+      </div>
+      <div class="px-note">
+        <strong>Latest result:</strong> {escape(str(latest))}
+      </div>
+      <div class="px-note px-note-muted">
+        <strong>Note:</strong> {escape(str(note))}
+      </div>
+    </div>
+    """
+
+
+def _reset_action_template() -> str:
+    return _dump_json({"action_type": "inspect_case"})
+
+
+def _response_payload(operation: str, observation: PrivacyOpsObservation, state: PrivacyOpsState) -> str:
+    observation_payload = observation.model_dump(mode="json")
+    state_payload = state.model_dump(mode="json")
+    return _dump_json(
+        {
+            "operation": operation,
+            "observation": observation_payload,
+            "state": state_payload,
+            "reward": observation_payload.get("reward"),
+            "done": observation_payload.get("done", state_payload.get("done")),
+        }
+    )
+
+
+def _gradio_reset_episode(
+    task_id: str,
+    seed: float | int | None,
+    current_env: PrivacyOpsXEnvironment | None,
+):
+    if current_env is not None:
+        try:
+            current_env.close()
+        except Exception:
+            pass
+    env = PrivacyOpsXEnvironment()
+    numeric_seed = int(seed or 0)
+    observation = env.reset(task_id=task_id, seed=numeric_seed)
+    return (
+        env,
+        _status_html(f"Case ready - {task_id} - seed {numeric_seed}", kind="ok"),
+        _session_summary_html(
+            observation.model_dump(mode="json"),
+            env.state.model_dump(mode="json"),
+        ),
+        _response_payload("reset", observation, env.state),
+        _reset_action_template(),
+    )
+
+
+def _gradio_run_step(
+    current_env: PrivacyOpsXEnvironment | None,
+    action_json: str,
+):
+    if current_env is None:
+        message = "Start a case first."
+        return (
+            None,
+            _status_html(message, kind="error"),
+            _session_summary_html(None, None),
+            _dump_json({"error": message}),
+        )
+
+    try:
+        action_payload = json.loads(action_json)
+    except json.JSONDecodeError as exc:
+        return (
+            current_env,
+            _status_html("Action JSON is invalid.", kind="error"),
+            _session_summary_html(None, None),
+            _dump_json({"error": f"JSON decode error: {exc}"}),
+        )
+
+    try:
+        action = PrivacyOpsAction(**action_payload)
+    except Exception as exc:
+        return (
+            current_env,
+            _status_html("Action payload did not match the schema.", kind="error"),
+            _session_summary_html(None, None),
+            _dump_json({"error": str(exc), "action": action_payload}),
+        )
+
+    observation = current_env.step(action)
+    observation_payload = observation.model_dump(mode="json")
+    state_payload = current_env.state.model_dump(mode="json")
+    status_message = (
+        "Case finished."
+        if state_payload.get("done")
+        else f"Step saved - reward {observation_payload.get('reward', 0.0):.4f}"
+    )
+    return (
+        current_env,
+        _status_html(status_message, kind="ok"),
+        _session_summary_html(observation_payload, state_payload),
+        _response_payload("step", observation, current_env.state),
+    )
+
+
+def _action_template(action_type: str, **extras: Any) -> str:
+    payload = {"action_type": action_type}
+    payload.update(extras)
+    return _dump_json(payload)
+
+
+def _build_gradio_demo() -> gr.Blocks:
+    payload = _load_dashboard_payload()
+    task_choices = [
+        (f"{task['difficulty']} - {task['subject']}", task["task_id"])
+        for task in _task_catalog()
+    ]
+    action_examples = [
+        [_action_template("inspect_case")],
+        [_action_template("search_policy", query="legal hold retention deletion")],
+        [_action_template("request_review", reviewer="legal")],
+        [_action_template("message_requester", content="Please verify your identity and confirm which account is in scope.")],
+        [_action_template("submit")],
+    ]
+    schema_text = _dump_json(
+        {
+            "action": PrivacyOpsAction.model_json_schema(),
+            "observation": PrivacyOpsObservation.model_json_schema(),
+            "state": PrivacyOpsState.model_json_schema(),
+        }
+    )
+    css = """
+    .gradio-container {background: linear-gradient(180deg, #08131d 0%, #0a1622 100%) !important;}
+    .px-shell {display: grid; gap: 18px;}
+    .px-hero, .px-grid {display: grid; gap: 16px;}
+    .px-hero {grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.9fr);}
+    .px-card {
+      border: 1px solid #22384d;
+      border-radius: 20px;
+      padding: 20px;
+      background: #0f1d2a;
+      color: #eef4f8;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.20);
+    }
+    .px-card p, .px-card li {color: #9ab0c4;}
+    .px-summary-card ul, .px-task-card ul, .px-card ul {margin: 12px 0 0; padding-left: 18px;}
+    .px-eyebrow, .px-chip, .px-kicker {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #244357;
+      color: #8ae4dc;
+      background: rgba(79, 209, 197, 0.08);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .px-hero h1 {margin: 10px 0 8px; font-size: clamp(2.5rem, 4vw, 3.6rem); line-height: 1.02;}
+    .px-lead {margin: 0; color: #9ab0c4; font-size: 1.04rem; max-width: 62ch;}
+    .px-link-row {display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;}
+    .px-link-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #eef4f8;
+      border: 1px solid #2a465d;
+      background: #10202d;
+      font-weight: 700;
+    }
+    .px-link-button.px-primary {background: #4fd1c5; color: #08212a; border-color: transparent;}
+    .px-section-head {display: grid; gap: 6px; margin-bottom: 2px;}
+    .px-section-head h2 {margin: 0; color: #eef4f8;}
+    .px-section-head p {margin: 0; color: #9ab0c4;}
+    .px-metrics-grid {grid-template-columns: repeat(4, minmax(0, 1fr));}
+    .px-story-grid, .px-task-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-two-up {grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-metric-value {font-size: 2rem; font-weight: 800; margin-top: 10px;}
+    .px-step {
+      width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
+      background: #163041; color: #8ae4dc; font-weight: 800; margin-bottom: 12px;
+    }
+    .px-plot {width: 100%; border-radius: 16px; border: 1px solid #22384d; margin-top: 12px;}
+    .px-status {
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      border: 1px solid #244357;
+      margin-bottom: 10px;
+    }
+    .px-status-ready {background: #0f1d2a; color: #cde4f0;}
+    .px-status-ok {background: rgba(79, 209, 197, 0.10); color: #8ae4dc; border-color: #285050;}
+    .px-status-error {background: rgba(255, 143, 135, 0.12); color: #ffd4cf; border-color: #5d3330;}
+    .px-session-card {display: grid; gap: 16px;}
+    .px-session-grid {grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;}
+    .px-session-grid div {
+      border-radius: 14px; border: 1px solid #22384d; background: #132536; padding: 12px;
+      display: grid; gap: 4px;
+    }
+    .px-session-grid strong {font-size: 0.78rem; color: #8ae4dc; text-transform: uppercase; letter-spacing: 0.05em;}
+    .px-session-grid span {color: #eef4f8;}
+    .px-note {border-left: 3px solid #4fd1c5; padding-left: 12px; color: #eef4f8;}
+    .px-note-muted {border-left-color: #365065; color: #9ab0c4;}
+    @media (max-width: 1024px) {
+      .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid {grid-template-columns: 1fr;}
+    }
+    """
+
+    with gr.Blocks(
+        title="PrivacyOps-X",
+        analytics_enabled=False,
+    ) as demo:
+        gr.HTML(_build_overview_html(payload))
+        with gr.Tabs():
+            with gr.Tab("Run Demo"):
+                gr.Markdown(
+                    """
+                    ### Live benchmark playground
+                    Use this tab to run the live demo.
+                    Pick a task, start the case, send one action, and read the JSON result.
+                    """
+                )
+                with gr.Row():
+                    with gr.Column(scale=4):
+                        status = gr.HTML(_status_html("Ready to start a case."))
+                        task_id = gr.Dropdown(
+                            choices=task_choices,
+                            value=task_choices[0][1],
+                            label="Task",
+                        )
+                        seed = gr.Number(value=0, precision=0, label="Seed")
+                        reset_button = gr.Button("Start Case", variant="primary")
+                        action_json = gr.Code(
+                            value=_reset_action_template(),
+                            language="json",
+                            label="Action JSON",
+                            lines=16,
+                        )
+                        with gr.Row():
+                            inspect_button = gr.Button("Inspect case")
+                            search_button = gr.Button("Search policy")
+                            review_button = gr.Button("Ask legal to review")
+                        with gr.Row():
+                            requester_button = gr.Button("Message user")
+                            self_review_button = gr.Button("Check my work")
+                            submit_button = gr.Button("Submit")
+                        step_button = gr.Button("Send Action", variant="primary")
+                    with gr.Column(scale=6):
+                        session_summary = gr.HTML(_session_summary_html(None, None))
+                        response_json = gr.Code(
+                            value="Press \"Start Case\" to begin.",
+                            language="json",
+                            label="Latest result",
+                            lines=28,
+                        )
+                gr.Examples(
+                    examples=action_examples,
+                    inputs=[action_json],
+                    label="Example actions",
+                )
+                session_env = gr.State(value=None)
+                reset_button.click(
+                    fn=_gradio_reset_episode,
+                    inputs=[task_id, seed, session_env],
+                    outputs=[session_env, status, session_summary, response_json, action_json],
+                )
+                step_button.click(
+                    fn=_gradio_run_step,
+                    inputs=[session_env, action_json],
+                    outputs=[session_env, status, session_summary, response_json],
+                )
+                inspect_button.click(
+                    fn=lambda: _action_template("inspect_case"),
+                    outputs=action_json,
+                )
+                search_button.click(
+                    fn=lambda: _action_template("search_policy", query="legal hold retention deletion"),
+                    outputs=action_json,
+                )
+                review_button.click(
+                    fn=lambda: _action_template("request_review", reviewer="legal"),
+                    outputs=action_json,
+                )
+                requester_button.click(
+                    fn=lambda: _action_template(
+                        "message_requester",
+                        content="Please verify your identity and confirm which linked account aliases are in scope.",
+                    ),
+                    outputs=action_json,
+                )
+                self_review_button.click(
+                    fn=lambda: _action_template("self_review"),
+                    outputs=action_json,
+                )
+                submit_button.click(
+                    fn=lambda: _action_template("submit"),
+                    outputs=action_json,
+                )
+            with gr.Tab("Results"):
+                gr.HTML(_build_results_html(payload))
+            with gr.Tab("API"):
+                gr.HTML(_build_api_html())
+                gr.Code(value=schema_text, language="json", label="Schema", lines=24)
+    demo.theme = gr.themes.Soft(
+        primary_hue="teal",
+        neutral_hue="slate",
+        radius_size="lg",
+    )
+    demo.css = css
+    return demo
+
+
 def _client_identity(request: Request) -> str:
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
@@ -687,8 +1257,6 @@ def dashboard() -> str:
         if payload["self_plot"]
         else "<div class='placeholder'>Self-improvement plot not available yet.</div>"
     )
-    before_html = _render_trajectory(payload["before_behavior"])
-    after_html = _render_trajectory(payload["after_behavior"])
     return f"""
     <!doctype html>
     <html lang="en">
@@ -887,41 +1455,40 @@ def dashboard() -> str:
       <body>
         <div class="shell">
           <section class="hero">
-            <div class="eyebrow">Judge dashboard</div>
-            <h1>PrivacyOps-X report view</h1>
+            <div class="eyebrow">View results</div>
+            <h1>PrivacyOps-X results</h1>
             <p>
-              This page is the fastest path for judges to understand the benchmark:
-              baseline range, oracle upper bound, self-improvement evidence, plots,
-              and one before/after trajectory on the finale case.
+              This page shows the main results of the project.
+              It shows scores, plots, and what the numbers mean.
             </p>
             <div class="actions">
-              <a class="button primary" href="/docs">Open API docs</a>
-              <a class="button" href="/judge-report">Judge report JSON</a>
+              <a class="button primary" href="/docs">Open docs</a>
+              <a class="button" href="/judge-report">Project summary JSON</a>
               <a class="button" href="/curriculum">Curriculum JSON</a>
-              <a class="button" href="/schema">Typed schema</a>
+              <a class="button" href="/schema">Schema</a>
             </div>
           </section>
 
           <section class="grid stats">
             <article class="card">
-              <div class="label">Random Policy</div>
-              <div class="value">{random_score}<small>weak baseline</small></div>
+              <div class="label">Random agent</div>
+              <div class="value">{random_score}<small>low score</small></div>
             </article>
             <article class="card">
-              <div class="label">Teacher Policy</div>
-              <div class="value">{teacher_score}<small>best known policy</small></div>
+              <div class="label">Teacher agent</div>
+              <div class="value">{teacher_score}<small>high score</small></div>
             </article>
             <article class="card">
-              <div class="label">First Try</div>
-              <div class="value">{baseline_score}<small>before feedback</small></div>
+              <div class="label">Baseline</div>
+              <div class="value">{baseline_score}<small>score before improvement</small></div>
             </article>
             <article class="card">
-              <div class="label">Improved Try</div>
-              <div class="value">{improved_score}<small>after feedback</small></div>
+              <div class="label">Improved</div>
+              <div class="value">{improved_score}<small>score after improvement</small></div>
             </article>
             <article class="card">
               <div class="label">Trained Model</div>
-              <div class="value">{sft_score}<small>{"not added yet" if payload["sft_score"] is None else "GPU SFT result"}</small></div>
+              <div class="value">{sft_score}<small>{"not ready yet" if payload["sft_score"] is None else "trained model result"}</small></div>
             </article>
           </section>
 
@@ -929,31 +1496,14 @@ def dashboard() -> str:
             <h2>Plots</h2>
             <div class="split">
               <article class="card plot">
-                <h3>Policy Comparison</h3>
-                <p class="muted">This compares a weak random policy with the strong teacher policy on the finale task.</p>
+                <h3>Policy comparison</h3>
+                <p class="muted">This plot compares a weak agent and a strong agent.</p>
                 {random_plot_html}
               </article>
               <article class="card plot">
-                <h3>Improvement Over Retries</h3>
-                <p class="muted">The same adaptive agent gets better after feedback and another attempt.</p>
+                <h3>Improvement over time</h3>
+                <p class="muted">This plot shows the agent getting better after feedback.</p>
                 {self_plot_html}
-              </article>
-            </div>
-          </section>
-
-          <section class="section">
-            <h2>Clear Example</h2>
-            <p class="muted">The plots above compare policies. The two JSON examples below show the self-improvement loop: first try vs improved try.</p>
-            <div class="split">
-              <article class="card">
-                <h3>First Try</h3>
-                <p class="muted">This attempt sets a few fields and submits too early.</p>
-                {before_html}
-              </article>
-              <article class="card">
-                <h3>Improved Try</h3>
-                <p class="muted">This attempt opens records, checks policy, asks follow-up questions, gets review, and then submits.</p>
-                {after_html}
               </article>
             </div>
           </section>
@@ -966,12 +1516,12 @@ def dashboard() -> str:
                   <tr><th>Metric</th><th>Meaning</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>Compliance</td><td>Does the agent follow the privacy rules?</td></tr>
-                  <tr><td>Safety</td><td>Does it avoid harmful actions or unsafe promises?</td></tr>
-                  <tr><td>Evidence</td><td>Does it check records, policy, and requester facts before acting?</td></tr>
-                  <tr><td>Legal</td><td>Does it handle legal hold, retention, and escalation correctly?</td></tr>
-                  <tr><td>Communication</td><td>Does it give a safe user reply and clear internal notes?</td></tr>
-                  <tr><td>Efficiency</td><td>Does it avoid extra steps and stay within the step budget?</td></tr>
+                  <tr><td>Compliance</td><td>Did the agent follow the rules?</td></tr>
+                  <tr><td>Safety</td><td>Did it avoid unsafe actions or promises?</td></tr>
+                  <tr><td>Evidence</td><td>Did it check records, policy, and user details first?</td></tr>
+                  <tr><td>Legal</td><td>Did it handle legal hold, retention, and escalation in the right way?</td></tr>
+                  <tr><td>Communication</td><td>Did it give a safe reply and clear notes?</td></tr>
+                  <tr><td>Efficiency</td><td>Did it avoid extra steps and stay within the step limit?</td></tr>
                 </tbody>
               </table>
             </article>
@@ -982,1119 +1532,14 @@ def dashboard() -> str:
     """
 
 
-@app.get("/playground", include_in_schema=False, response_class=HTMLResponse)
-@app.get("/playground/", include_in_schema=False, response_class=HTMLResponse)
-@app.get("/web", include_in_schema=False, response_class=HTMLResponse)
-@app.get("/web/", include_in_schema=False, response_class=HTMLResponse)
-def playground() -> str:
-    return """
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>PrivacyOps-X Playground</title>
-        <style>
-          :root {
-            --page: #08131c;
-            --panel: #0f1c27;
-            --panel-soft: #132331;
-            --field: #0a141d;
-            --line: #21384a;
-            --ink: #edf4f8;
-            --muted: #9fb0bd;
-            --accent: #56d3c5;
-            --accent-ink: #072028;
-            --danger-soft: rgba(255, 143, 135, 0.10);
-            --ok-soft: rgba(86, 211, 197, 0.12);
-            --radius: 18px;
-          }
-          * { box-sizing: border-box; }
-          body {
-            margin: 0;
-            background: var(--page);
-            color: var(--ink);
-            font: 16px/1.5 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          }
-          a { color: inherit; }
-          .shell {
-            width: min(1380px, calc(100vw - 32px));
-            margin: 0 auto;
-            padding: 28px 0 40px;
-          }
-          .hero {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 18px;
-            align-items: end;
-            margin-bottom: 18px;
-          }
-          .brand {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-          }
-          .logo {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            background: #163041;
-            color: var(--accent);
-            font-weight: 800;
-            letter-spacing: 0.06em;
-          }
-          .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid #244354;
-            background: #10202c;
-            color: var(--accent);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-          }
-          h1 {
-            margin: 10px 0 6px;
-            font-size: clamp(2rem, 4vw, 3rem);
-            line-height: 1.05;
-            font-family: Georgia, "Times New Roman", serif;
-          }
-          .subtitle {
-            margin: 0;
-            max-width: 760px;
-            color: var(--muted);
-          }
-          .top-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: flex-end;
-          }
-          .button,
-          .chip {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 42px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            background: var(--panel-soft);
-            color: var(--ink);
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-          }
-          .button.primary {
-            background: var(--accent);
-            color: var(--accent-ink);
-            border-color: transparent;
-          }
-          .layout {
-            display: grid;
-            grid-template-columns: 420px minmax(0, 1fr);
-            gap: 18px;
-            align-items: start;
-          }
-          .explain-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 18px;
-          }
-          .stack {
-            display: grid;
-            gap: 18px;
-          }
-          .card {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            padding: 20px;
-          }
-          .section-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 14px;
-          }
-          .section-head p,
-          .muted,
-          .helper {
-            margin: 0;
-            color: var(--muted);
-          }
-          .status {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 999px;
-            border: 1px solid #285050;
-            background: var(--ok-soft);
-            color: var(--accent);
-            font-weight: 700;
-            white-space: nowrap;
-          }
-          .field {
-            margin-bottom: 14px;
-          }
-          label {
-            display: block;
-            margin-bottom: 8px;
-            color: #dce8ef;
-            font-size: 0.9rem;
-            font-weight: 700;
-          }
-          input,
-          select,
-          textarea {
-            width: 100%;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            background: var(--field);
-            color: var(--ink);
-            padding: 12px 14px;
-            font: inherit;
-          }
-          textarea {
-            min-height: 260px;
-            resize: vertical;
-            font-family: Consolas, "Courier New", monospace;
-            line-height: 1.55;
-          }
-          .inline-fields {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 120px;
-            gap: 12px;
-          }
-          .button-row,
-          .chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-          }
-          .response {
-            display: grid;
-            gap: 16px;
-          }
-          pre {
-            margin: 0;
-            min-height: 520px;
-            overflow: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-            border-radius: 14px;
-            border: 1px solid var(--line);
-            background: var(--field);
-            color: #dcebf4;
-            padding: 18px;
-            font: 0.95rem/1.6 Consolas, "Courier New", monospace;
-          }
-          .mini-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-          }
-          .explain-grid .mini {
-            min-height: 100%;
-          }
-          .mini {
-            border-radius: 14px;
-            border: 1px solid var(--line);
-            background: var(--panel-soft);
-            padding: 14px;
-          }
-          .mini strong {
-            display: block;
-            margin-bottom: 6px;
-            color: #dce8ef;
-            font-size: 0.82rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-          }
-          .mini code {
-            color: #d5f7f1;
-          }
-          .inline-link {
-            color: #cfeef5;
-            text-decoration: none;
-            border-bottom: 1px dotted #527387;
-          }
-          .kicker {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 18px;
-          }
-          .tip-box {
-            border-left: 3px solid var(--accent);
-            background: #0e1b26;
-            border-radius: 14px;
-            padding: 14px 16px;
-          }
-          @media (max-width: 1080px) {
-            .hero,
-            .layout,
-            .mini-grid,
-            .explain-grid {
-              grid-template-columns: 1fr;
-            }
-            .top-actions {
-              justify-content: flex-start;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="shell">
-          <section class="hero">
-            <div class="brand">
-              <div class="logo">PX</div>
-              <div>
-                <div class="eyebrow">Interactive Playground</div>
-                <h1>PrivacyOps-X</h1>
-                <p class="subtitle">
-                  This page is the live benchmark interface. Reset a case, inspect the observation,
-                  send a typed action, and watch the exact JSON response that the evaluator and
-                  training pipeline both see.
-                </p>
-              </div>
-            </div>
-            <div class="top-actions">
-              <a class="button" href="/">Home</a>
-              <a class="button" href="/dashboard">Judge Dashboard</a>
-              <a class="button" href="/docs">API Docs</a>
-              <a class="button" href="/schema">Schema</a>
-            </div>
-          </section>
-
-          <section class="explain-grid">
-            <div class="mini">
-              <strong>What this page proves</strong>
-              You are not chatting with a black box. You are controlling a typed privacy benchmark one step at a time.
-            </div>
-            <div class="mini">
-              <strong>What to do</strong>
-              Pick a task, reset it, inspect the case, open records, search policy, then request review before submitting.
-            </div>
-            <div class="mini">
-              <strong>What you get back</strong>
-              The environment returns structured observations, rewards, and final scores that make the agent behavior inspectable.
-            </div>
-          </section>
-
-          <div class="layout">
-            <div class="stack">
-              <section class="card">
-                <div class="section-head">
-                  <div>
-                    <h2>Episode control</h2>
-                    <p class="muted">Choose a task, set the seed, then call <code>/reset</code>.</p>
-                  </div>
-                  <div id="status" class="status">Ready</div>
-                </div>
-
-                <div class="field">
-                  <label for="task-id">Task</label>
-                  <select id="task-id">
-                    <option value="easy_verified_access_with_injection">Easy - verified access with prompt injection</option>
-                    <option value="medium_unverified_erasure_multi_account">Medium - multi-account erasure with billing retention</option>
-                    <option value="hard_guardian_minor_legal_hold_fraud">Hard - guardian request under legal hold and fraud</option>
-                    <option value="finale_cross_border_recovery_cascade">Finale - cross-border recovery cascade</option>
-                  </select>
-                </div>
-
-                <div class="inline-fields">
-                  <div class="field">
-                    <label for="seed">Seed</label>
-                    <input id="seed" type="number" value="0" min="0">
-                  </div>
-                </div>
-
-                <div class="button-row">
-                  <button class="button primary" type="button" onclick="resetEnv()">Reset episode</button>
-                  <button class="button" type="button" onclick="loadHealth()">Health</button>
-                  <button class="button" type="button" onclick="loadSchema()">Schema</button>
-                </div>
-              </section>
-
-              <section class="card">
-                <div class="section-head">
-                  <div>
-                    <h2>Action JSON</h2>
-                    <p class="muted">Paste only the action body. The page wraps it as <code>{"action": ...}</code>.</p>
-                  </div>
-                </div>
-
-                <div class="field">
-                  <label for="action-json">Next action</label>
-                  <textarea id="action-json">{
-  "action_type": "inspect_case"
-}</textarea>
-                </div>
-
-                <div class="chip-row">
-                  <button class="chip" type="button" onclick="setAction('inspect_case')">Inspect case</button>
-                  <button class="chip" type="button" onclick="setAction('open_record', { target_id: 'core_profile' })">Open record</button>
-                  <button class="chip" type="button" onclick="setAction('search_policy', { query: 'legal hold retention deletion' })">Search policy</button>
-                  <button class="chip" type="button" onclick="setAction('self_review')">Self review</button>
-                  <button class="chip" type="button" onclick="setAction('submit')">Submit</button>
-                </div>
-
-                <div class="button-row" style="margin-top:12px;">
-                  <button class="button primary" type="button" onclick="runStep()">Send step</button>
-                </div>
-              </section>
-            </div>
-
-            <section class="card response">
-              <div class="section-head">
-                <div>
-                  <h2>Live response</h2>
-                  <p class="muted">Every request and response stays visible here so judges can see the exact environment behavior.</p>
-                </div>
-              </div>
-
-              <div class="kicker">
-                <div class="tip-box">
-                  Start with <code>inspect_case</code>, then open records and policy before sending requester or reviewer actions.
-                </div>
-              </div>
-
-              <pre id="output">Press "Reset episode" to begin.</pre>
-
-              <div class="mini-grid">
-                <div class="mini">
-                  <strong>Suggested flow</strong>
-                  Reset -> inspect -> open records -> search policy -> review -> submit
-                </div>
-                <div class="mini">
-                  <strong>Useful links</strong>
-                  <a class="inline-link" href="/envinfo">/envinfo</a><br>
-                  <a class="inline-link" href="/judge-report">/judge-report</a><br>
-                  <a class="inline-link" href="/curriculum">/curriculum</a>
-                </div>
-                <div class="mini">
-                  <strong>Common actions</strong>
-                  <code>inspect_case</code><br>
-                  <code>open_record</code><br>
-                  <code>request_review</code>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <script>
-          const output = document.getElementById("output");
-          const statusChip = document.getElementById("status");
-
-          function setStatus(text, kind = "ok") {
-            statusChip.textContent = text;
-            if (kind === "error") {
-              statusChip.style.color = "#ffd4cf";
-              statusChip.style.borderColor = "#5d3330";
-              statusChip.style.background = "var(--danger-soft)";
-              return;
-            }
-            statusChip.style.color = "var(--accent)";
-            statusChip.style.borderColor = "#285050";
-            statusChip.style.background = "var(--ok-soft)";
-          }
-
-          function render(title, payload) {
-            output.textContent = title + "\\n\\n" + JSON.stringify(payload, null, 2);
-          }
-
-          async function request(path, options = {}) {
-            const response = await fetch(path, options);
-            const text = await response.text();
-            let body;
-            try {
-              body = JSON.parse(text);
-            } catch {
-              body = text;
-            }
-            if (!response.ok) {
-              throw new Error(typeof body === "string" ? body : JSON.stringify(body, null, 2));
-            }
-            return body;
-          }
-
-          async function resetEnv() {
-            try {
-              setStatus("Resetting...");
-              const taskId = document.getElementById("task-id").value;
-              const seed = Number(document.getElementById("seed").value || 0);
-              const body = await request("/reset", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ task_id: taskId, seed })
-              });
-              render("POST /reset", body);
-              setStatus("Episode ready");
-            } catch (error) {
-              render("Reset failed", { error: String(error) });
-              setStatus("Reset failed", "error");
-            }
-          }
-
-          async function runStep() {
-            try {
-              setStatus("Running step...");
-              const action = JSON.parse(document.getElementById("action-json").value);
-              const body = await request("/step", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action })
-              });
-              render("POST /step", body);
-              setStatus(body.done ? "Episode finished" : "Step accepted");
-            } catch (error) {
-              render("Step failed", { error: String(error) });
-              setStatus("Step failed", "error");
-            }
-          }
-
-          async function loadSchema() {
-            try {
-              setStatus("Loading schema...");
-              const body = await request("/schema");
-              render("GET /schema", body);
-              setStatus("Schema loaded");
-            } catch (error) {
-              render("Schema failed", { error: String(error) });
-              setStatus("Schema failed", "error");
-            }
-          }
-
-          async function loadHealth() {
-            try {
-              setStatus("Checking health...");
-              const body = await request("/healthz");
-              render("GET /healthz", body);
-              setStatus("Healthy");
-            } catch (error) {
-              render("Health check failed", { error: String(error) });
-              setStatus("Health failed", "error");
-            }
-          }
-
-          function setAction(actionType, extras = {}) {
-            document.getElementById("action-json").value = JSON.stringify({ action_type: actionType, ...extras }, null, 2);
-          }
-        </script>
-      </body>
-    </html>
-    """
+@app.get("/", include_in_schema=False)
+@app.get("/web", include_in_schema=False)
+@app.get("/web/", include_in_schema=False)
+def interface_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/playground", status_code=307)
 
 
-@app.get("/", include_in_schema=False, response_class=HTMLResponse)
-def index() -> str:
-    payload = _load_dashboard_payload()
-    task_count = len(load_tasks())
-    random_score = _format_score(payload["random_score"])
-    teacher_score = _format_score(payload["teacher_score"])
-    baseline_score = _format_score(payload["baseline_score"])
-    improved_score = _format_score(payload["improved_score"])
-    sft_score = _format_score(payload["sft_score"])
-    trained_note = (
-        "Recovered trained-checkpoint score."
-        if payload["sft_score"] is not None
-        else "Final trained-model evaluation can drop in here after rerun."
-    )
-    random_plot_html = (
-        f"<img src='{payload['random_plot']}' alt='Random vs teacher comparison plot' />"
-        if payload["random_plot"]
-        else "<div class='placeholder'>Comparison plot not available yet.</div>"
-    )
-    self_plot_html = (
-        f"<img src='{payload['self_plot']}' alt='Self-improvement curve plot' />"
-        if payload["self_plot"]
-        else "<div class='placeholder'>Self-improvement plot not available yet.</div>"
-    )
-    before_html = _render_trajectory(payload["before_behavior"])
-    after_html = _render_trajectory(payload["after_behavior"])
-    html = """
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>PrivacyOps-X</title>
-        <style>
-          :root {
-            --bg: #08131d;
-            --panel: #0f1d2a;
-            --panel-soft: #132536;
-            --panel-2: #0c1723;
-            --ink: #eef4f8;
-            --muted: #9ab0c4;
-            --line: #22384d;
-            --accent: #4fd1c5;
-            --accent-2: #8ae4dc;
-            --warning: #ffbf70;
-            --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
-          }
-          * { box-sizing: border-box; }
-          body {
-            margin: 0;
-            background: linear-gradient(180deg, #09131d 0%, #0a1622 100%);
-            color: var(--ink);
-            font: 16px/1.55 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          }
-          .page {
-            width: min(1360px, calc(100vw - 32px));
-            margin: 0 auto;
-            padding: 28px 0 44px;
-          }
-          .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 18px;
-          }
-          .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-          }
-          .logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-            display: grid;
-            place-items: center;
-            background: #173044;
-            color: var(--accent-2);
-            font-weight: 800;
-            letter-spacing: 0.06em;
-          }
-          h1, h2, h3 { margin: 0; }
-          h1 {
-            font-size: clamp(2.2rem, 4vw, 3.4rem);
-            font-family: Georgia, "Times New Roman", serif;
-          }
-          .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid #244357;
-            color: var(--accent-2);
-            background: rgba(79, 209, 197, 0.08);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            font-size: 0.75rem;
-            font-weight: 700;
-          }
-          .hero {
-            display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.95fr);
-            gap: 20px;
-            padding: 28px;
-            border-radius: 24px;
-            border: 1px solid var(--line);
-            background: var(--panel);
-            box-shadow: var(--shadow);
-          }
-          .hero-copy p,
-          .muted {
-            color: var(--muted);
-            margin: 0;
-          }
-          .hero-copy p {
-            margin-top: 14px;
-            max-width: 62ch;
-            font-size: 1.05rem;
-          }
-          .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 22px;
-          }
-          .button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 46px;
-            padding: 10px 16px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 700;
-            border: 1px solid #2a465d;
-            background: #10202d;
-            color: var(--ink);
-          }
-          .button.primary {
-            background: var(--accent);
-            color: #08212a;
-            border-color: transparent;
-          }
-          .aside {
-            display: grid;
-            gap: 14px;
-          }
-          .mini-panel,
-          .card {
-            border-radius: 18px;
-            border: 1px solid var(--line);
-            background: var(--panel-soft);
-            padding: 18px;
-          }
-          .mini-panel h2,
-          .section-title {
-            font-size: 0.82rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--warning);
-            margin-bottom: 10px;
-          }
-          .mini-panel ul {
-            margin: 0;
-            padding-left: 18px;
-            color: var(--muted);
-          }
-          .mini-panel li { margin-bottom: 8px; }
-          .stats,
-          .story-grid,
-          .workflow-grid,
-          .io-grid,
-          .link-grid,
-          .case-grid,
-          .verify-grid,
-          .result-grid,
-          .trajectory-grid {
-            display: grid;
-            gap: 16px;
-            margin-top: 18px;
-          }
-          .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-          .story-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-          .workflow-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-          .io-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .link-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-          .case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-          .verify-grid { grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); }
-          .result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .trajectory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .stat strong,
-          .story-card h3,
-          .workflow-card h3,
-          .link-card h3,
-          .case-card h3,
-          .io-card h3,
-          .result-card h3,
-          .trajectory-card h3 {
-            display: block;
-            margin-bottom: 8px;
-          }
-          .stat strong {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--muted);
-          }
-          .stat .value {
-            font-size: 2rem;
-            font-weight: 800;
-          }
-          .stat .sub {
-            color: var(--muted);
-            margin-top: 6px;
-          }
-          .section-title {
-            margin-top: 28px;
-          }
-          .link-card a,
-          .case-card a,
-          a.inline-link {
-            color: var(--accent-2);
-            text-decoration: none;
-          }
-          .link-card p,
-          .case-card p,
-          .story-card p,
-          .workflow-card p,
-          .io-card p,
-          .result-card p,
-          .trajectory-card p {
-            margin: 0;
-            color: var(--muted);
-          }
-          .story-card .step-number,
-          .workflow-card .step-number {
-            width: 34px;
-            height: 34px;
-            border-radius: 999px;
-            display: grid;
-            place-items: center;
-            margin-bottom: 12px;
-            background: rgba(138, 228, 220, 0.12);
-            border: 1px solid #244357;
-            color: var(--accent-2);
-            font-weight: 800;
-          }
-          .bullet-list {
-            margin: 10px 0 0;
-            padding-left: 18px;
-            color: var(--muted);
-          }
-          .bullet-list li { margin-bottom: 8px; }
-          .tag {
-            display: inline-flex;
-            padding: 4px 10px;
-            border-radius: 999px;
-            background: rgba(138, 228, 220, 0.08);
-            border: 1px solid #244357;
-            color: var(--accent-2);
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-          }
-          pre {
-            margin: 0;
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid #20384c;
-            background: #09131d;
-            color: #dceaf5;
-            overflow: auto;
-            font: 0.95rem/1.6 Consolas, "Courier New", monospace;
-          }
-          .plot {
-            overflow: hidden;
-          }
-          .plot img {
-            width: 100%;
-            display: block;
-            border-radius: 14px;
-            border: 1px solid #20384c;
-            background: #09131d;
-          }
-          .placeholder {
-            min-height: 260px;
-            display: grid;
-            place-items: center;
-            color: var(--muted);
-            border-radius: 14px;
-            border: 1px dashed #2a465d;
-            background: #09131d;
-          }
-          .trajectory {
-            margin: 12px 0 0;
-            padding-left: 18px;
-          }
-          .trajectory li {
-            margin-bottom: 10px;
-            color: var(--ink);
-          }
-          ul.clean {
-            margin: 0;
-            padding-left: 18px;
-            color: var(--muted);
-          }
-          ul.clean li { margin-bottom: 8px; }
-          code {
-            padding: 2px 6px;
-            border-radius: 7px;
-            background: rgba(138, 228, 220, 0.08);
-            color: #d7f7f1;
-          }
-          @media (max-width: 1080px) {
-            .hero,
-            .stats,
-            .link-grid,
-            .case-grid,
-            .verify-grid {
-              grid-template-columns: 1fr;
-            }
-            .page {
-              width: min(100vw - 20px, 1360px);
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="page">
-          <div class="topbar">
-            <div class="brand">
-              <div class="logo">PX</div>
-              <div>
-                <div class="eyebrow">OpenEnv benchmark</div>
-                <h1>PrivacyOps-X</h1>
-              </div>
-            </div>
-          </div>
-
-          <section class="hero">
-              <div class="hero-copy">
-                <div class="eyebrow">Safety-critical privacy operations</div>
-                <h2 style="margin-top:12px; font-size:clamp(1.9rem, 3vw, 2.8rem); font-family: Georgia, 'Times New Roman', serif;">
-                  A benchmark that lets you see how a privacy agent thinks, acts, and improves.
-                </h2>
-                <p>
-                  PrivacyOps-X trains and evaluates agents on real privacy-rights workflows:
-                  identity checks, deletion constraints, legal hold, fraud review, requester
-                  messaging, and final case submission under measurable reward.
-                </p>
-              <div class="actions">
-                <a class="button primary" href="/playground">Open Playground</a>
-                <a class="button" href="/dashboard">Judge Dashboard</a>
-                <a class="button" href="/docs">API Docs</a>
-                <a class="button" href="/judge-report">Judge Report</a>
-                <a class="button" href="/schema">Typed Schema</a>
-                <a class="button" href="/curriculum">Curriculum</a>
-              </div>
-            </div>
-            <div class="aside">
-              <div class="mini-panel">
-                <h2>What this project is</h2>
-                <ul>
-                  <li>A deterministic OpenEnv benchmark for privacy and compliance agents</li>
-                  <li>A live simulator where the agent must inspect evidence before acting</li>
-                  <li>A scoring system for safety, policy use, reviewer escalation, and communication</li>
-                  <li>A training and self-improvement pipeline with measurable outputs</li>
-                </ul>
-              </div>
-              <div class="mini-panel">
-                <h2>How to understand it fast</h2>
-                <ul>
-                  <li>Start in <a class="inline-link" href="/playground">/playground</a> to watch a real episode</li>
-                  <li>Open <a class="inline-link" href="/dashboard">/dashboard</a> for benchmark scores and plots</li>
-                  <li>Check <a class="inline-link" href="/judge-report">/judge-report</a> for the benchmark framing</li>
-                  <li>Use <a class="inline-link" href="/docs">/docs</a> and <a class="inline-link" href="/schema">/schema</a> to verify the API contract</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          <section class="stats">
-            <article class="card stat">
-              <strong>Scenarios</strong>
-              <div class="value">__TASK_COUNT__</div>
-              <div class="sub">easy, medium, hard, finale</div>
-            </article>
-            <article class="card stat">
-              <strong>Random vs Teacher</strong>
-              <div class="value">__RANDOM_SCORE__</div>
-              <div class="sub">teacher/oracle = __TEACHER_SCORE__</div>
-            </article>
-            <article class="card stat">
-              <strong>Self-improvement</strong>
-              <div class="value">__IMPROVED_SCORE__</div>
-              <div class="sub">from __BASELINE_SCORE__ on the finale task</div>
-            </article>
-            <article class="card stat">
-              <strong>Reviewers</strong>
-              <div class="value">3</div>
-              <div class="sub">compliance, legal, audit</div>
-            </article>
-            <article class="card stat">
-              <strong>Trained Model</strong>
-              <div class="value">__SFT_SCORE__</div>
-              <div class="sub">__TRAINED_NOTE__</div>
-            </article>
-          </section>
-
-          <div class="section-title">Project in one view</div>
-          <section class="story-grid">
-            <article class="card story-card">
-              <div class="step-number">1</div>
-              <h3>User picks a privacy case</h3>
-              <p>The evaluator chooses a task such as access, erasure, guardian authority, legal hold, or cross-border recovery conflict.</p>
-            </article>
-            <article class="card story-card">
-              <div class="step-number">2</div>
-              <h3>Agent acts through typed tools</h3>
-              <p>The agent cannot hand-wave. It must inspect the case, open records, search policy, message the requester, request review, and then submit.</p>
-            </article>
-            <article class="card story-card">
-              <div class="step-number">3</div>
-              <h3>Environment reveals consequences</h3>
-              <p>Each step changes the visible state and can expose hidden constraints like retention rules, fraud review, or legal hold.</p>
-            </article>
-            <article class="card story-card">
-              <div class="step-number">4</div>
-              <h3>Benchmark outputs measurable results</h3>
-              <p>The run ends with a score, failure modes, trajectories, plots, and training artifacts that show whether the agent handled the workflow safely.</p>
-            </article>
-          </section>
-
-          <div class="section-title">How the benchmark works</div>
-          <section class="workflow-grid">
-            <article class="card workflow-card">
-              <div class="step-number">A</div>
-              <h3>Reset</h3>
-              <p><code>/reset</code> starts a deterministic case with a task, requester thread, visible records, and hidden operational constraints.</p>
-            </article>
-            <article class="card workflow-card">
-              <div class="step-number">B</div>
-              <h3>Step</h3>
-              <p><code>/step</code> accepts one typed action and updates the case, reviewer state, risk, milestones, and reward.</p>
-            </article>
-            <article class="card workflow-card">
-              <div class="step-number">C</div>
-              <h3>Review</h3>
-              <p>Compliance, legal, and audit perspectives are represented in the environment so the agent must gather evidence before resolving the case.</p>
-            </article>
-            <article class="card workflow-card">
-              <div class="step-number">D</div>
-              <h3>Score</h3>
-              <p>The final score reflects safety, policy correctness, legal handling, evidence coverage, communication quality, and efficiency.</p>
-            </article>
-          </section>
-
-          <div class="section-title">What the agent can do and what the system returns</div>
-          <section class="io-grid">
-            <article class="card io-card">
-              <h3>Agent action space</h3>
-              <p>The interface is structured on purpose so behavior is inspectable and trainable.</p>
-              <ul class="bullet-list">
-                <li><code>inspect_case</code> to read the ticket and workspace</li>
-                <li><code>open_record</code> to inspect linked accounts, billing, fraud, or legal hold data</li>
-                <li><code>search_policy</code> and <code>open_policy_article</code> to ground decisions in policy</li>
-                <li><code>message_requester</code> and <code>draft_reply</code> for safe customer communication</li>
-                <li><code>request_review</code> and <code>self_review</code> before <code>submit</code></li>
-              </ul>
-            </article>
-            <article class="card io-card">
-              <h3>Environment outputs</h3>
-              <p>Every step returns rich state so the user can see exactly what changed and why.</p>
-              <ul class="bullet-list">
-                <li>Ticket summary, workspace fields, and requester thread</li>
-                <li>Visible records, visible policy articles, and reviewer findings</li>
-                <li>Risk score, milestones, steps remaining, and draft reply</li>
-                <li>Final score, failure modes, trajectories, and improvement lessons</li>
-                <li>JSON reports, plots, datasets, and training checkpoints</li>
-              </ul>
-            </article>
-          </section>
-
-          <div class="section-title">Measured results and training evidence</div>
-          <section class="result-grid">
-            <article class="card result-card plot">
-              <h3>Policy comparison</h3>
-              <p>This plot shows the baseline range between a weak random policy and the stronger teacher/oracle policy.</p>
-              __RANDOM_PLOT_HTML__
-            </article>
-            <article class="card result-card plot">
-              <h3>Self-improvement loop</h3>
-              <p>This shows the same benchmark agent getting better after feedback, moving from __BASELINE_SCORE__ to __IMPROVED_SCORE__.</p>
-              __SELF_PLOT_HTML__
-            </article>
-          </section>
-
-          <section class="trajectory-grid">
-            <article class="card trajectory-card">
-              <h3>Before feedback</h3>
-              <p>The weaker attempt sets a few fields and tends to submit too early.</p>
-              __BEFORE_HTML__
-            </article>
-            <article class="card trajectory-card">
-              <h3>After feedback</h3>
-              <p>The improved attempt opens records, checks policy, follows up with the requester, and requests review before submitting.</p>
-              __AFTER_HTML__
-            </article>
-          </section>
-
-          <div class="section-title">Quick links</div>
-          <section class="link-grid">
-            <article class="card link-card">
-              <h3><a href="/playground">Interactive playground</a></h3>
-              <p>See the full user interaction loop: choose a case, reset it, send actions, and inspect raw JSON responses live.</p>
-            </article>
-            <article class="card link-card">
-              <h3><a href="/dashboard">Judge dashboard</a></h3>
-              <p>Read the benchmark like a report: baseline, oracle, self-improvement, trajectories, and plots.</p>
-            </article>
-            <article class="card link-card">
-              <h3><a href="/docs">Swagger + schema</a></h3>
-              <p>Inspect the typed OpenAPI surface and model contracts without guessing what the environment expects.</p>
-            </article>
-          </section>
-
-          <div class="section-title">Benchmark cases</div>
-          <section class="case-grid">
-            <article class="card case-card">
-              <span class="tag">Easy</span>
-              <h3>Verified access with prompt injection</h3>
-              <p>A matched requester asks for access while trying to pressure the analyst into unsafe handling.</p>
-            </article>
-            <article class="card case-card">
-              <span class="tag">Medium</span>
-              <h3>Multi-account erasure with billing retention</h3>
-              <p>A GDPR deletion request arrives from a mismatched sender and conflicts with invoice retention rules.</p>
-            </article>
-            <article class="card case-card">
-              <span class="tag">Hard + Finale</span>
-              <h3>Guardian, legal hold, fraud, and cross-border conflict</h3>
-              <p>High-risk workflows force the agent to balance authority, fraud review, retention, and partial fulfillment.</p>
-            </article>
-          </section>
-
-          <div class="section-title">Why this project is different from a chatbot demo</div>
-          <section class="io-grid">
-            <article class="card io-card">
-              <h3>Operational reasoning, not just fluent answers</h3>
-              <p>The benchmark checks whether the agent gathers evidence, asks the right follow-up questions, chooses safe next steps, and respects hidden constraints.</p>
-            </article>
-            <article class="card io-card">
-              <h3>Trainable and reproducible</h3>
-              <p>The same environment supports evaluation, SFT data generation, QLoRA training, self-improvement loops, and judge-facing reproducibility through typed APIs.</p>
-            </article>
-          </section>
-
-          <div class="section-title">Quick verification</div>
-          <section class="verify-grid">
-            <article class="card">
-              <pre>curl -X POST /reset
-
-curl -X POST /reset \\
-  -H "Content-Type: application/json" \\
-  -d '{"task_id":"medium_unverified_erasure_multi_account","seed":0}'
-
-curl -X POST /step \\
-  -H "Content-Type: application/json" \\
-  -d '{"action":{"action_type":"inspect_case"}}'</pre>
-            </article>
-            <article class="card">
-              <ul class="clean">
-                <li><a class="inline-link" href="/health">/health</a> confirms runtime readiness</li>
-                <li><a class="inline-link" href="/metadata">/metadata</a> exposes environment identity</li>
-                <li><a class="inline-link" href="/envinfo">/envinfo</a> provides judge-friendly metadata</li>
-                <li><a class="inline-link" href="/healthz">/healthz</a> returns detailed health info</li>
-                <li><a class="inline-link" href="/playground">/playground</a> opens the built-in interactive UI</li>
-                <li><a class="inline-link" href="/docs">/docs</a> provides the FastAPI reference surface</li>
-              </ul>
-            </article>
-          </section>
-        </div>
-      </body>
-    </html>
-    """
-    return (
-        html.replace("__TASK_COUNT__", str(task_count))
-        .replace("__RANDOM_SCORE__", random_score)
-        .replace("__TEACHER_SCORE__", teacher_score)
-        .replace("__BASELINE_SCORE__", baseline_score)
-        .replace("__IMPROVED_SCORE__", improved_score)
-        .replace("__SFT_SCORE__", sft_score)
-        .replace("__TRAINED_NOTE__", trained_note)
-        .replace("__RANDOM_PLOT_HTML__", random_plot_html)
-        .replace("__SELF_PLOT_HTML__", self_plot_html)
-        .replace("__BEFORE_HTML__", before_html)
-        .replace("__AFTER_HTML__", after_html)
-    )
-
+app = gr.mount_gradio_app(app, _build_gradio_demo(), path="/playground")
 
 def main(host: str = "0.0.0.0", port: int = 8000) -> None:
     import uvicorn
@@ -2104,3 +1549,5 @@ def main(host: str = "0.0.0.0", port: int = 8000) -> None:
 
 if __name__ == "__main__":
     main()
+
+
