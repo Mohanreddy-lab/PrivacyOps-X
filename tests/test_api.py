@@ -8,9 +8,11 @@ client = TestClient(app)
 
 
 def test_root_endpoint_renders_homepage() -> None:
-    response = client.get("/", follow_redirects=False)
-    assert response.status_code == 307
-    assert response.headers["location"] == "/playground"
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "PrivacyOps-X" in response.text
+    assert "What this project does" in response.text
+    assert "View results" in response.text
 
 
 def test_playground_endpoint_renders_ui() -> None:
@@ -26,9 +28,10 @@ def test_playground_endpoint_renders_ui() -> None:
 
 
 def test_web_alias_renders_playground_ui() -> None:
-    response = client.get("/web", follow_redirects=False)
-    assert response.status_code == 307
-    assert response.headers["location"] == "/playground"
+    response = client.get("/web")
+    assert response.status_code == 200
+    assert "PrivacyOps-X" in response.text
+    assert "What this project does" in response.text
 
 
 def test_reset_endpoint_responds() -> None:

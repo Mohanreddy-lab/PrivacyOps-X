@@ -394,6 +394,106 @@ def _gradio_metric_card(title: str, value: str, caption: str) -> str:
     """
 
 
+def _shell_css() -> str:
+    return """
+    .gradio-container {background: linear-gradient(180deg, #08131d 0%, #0a1622 100%) !important;}
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #08131d 0%, #0a1622 100%);
+      color: #eef4f8;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: inherit; }
+    .px-shell {
+      display: grid;
+      gap: 18px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+      box-sizing: border-box;
+    }
+    .px-hero, .px-grid {display: grid; gap: 16px;}
+    .px-hero {grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.9fr);}
+    .px-card {
+      border: 1px solid #22384d;
+      border-radius: 20px;
+      padding: 20px;
+      background: #0f1d2a;
+      color: #eef4f8;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.20);
+    }
+    .px-card h2, .px-card h3 {margin-top: 0;}
+    .px-card p, .px-card li {color: #9ab0c4;}
+    .px-summary-card ul, .px-task-card ul, .px-card ul {margin: 12px 0 0; padding-left: 18px;}
+    .px-eyebrow, .px-chip, .px-kicker {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #244357;
+      color: #8ae4dc;
+      background: rgba(79, 209, 197, 0.08);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .px-hero h1 {margin: 10px 0 8px; font-size: clamp(2.5rem, 4vw, 3.6rem); line-height: 1.02;}
+    .px-lead {margin: 0; color: #9ab0c4; font-size: 1.04rem; max-width: 62ch;}
+    .px-link-row {display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;}
+    .px-link-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #eef4f8;
+      border: 1px solid #2a465d;
+      background: #10202d;
+      font-weight: 700;
+    }
+    .px-link-button.px-primary {background: #4fd1c5; color: #08212a; border-color: transparent;}
+    .px-section-head {display: grid; gap: 6px; margin-bottom: 2px;}
+    .px-section-head h2 {margin: 0; color: #eef4f8;}
+    .px-section-head p {margin: 0; color: #9ab0c4;}
+    .px-metrics-grid {grid-template-columns: repeat(4, minmax(0, 1fr));}
+    .px-story-grid, .px-task-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-two-up {grid-template-columns: repeat(2, minmax(0, 1fr));}
+    .px-metric-value {font-size: 2rem; font-weight: 800; margin-top: 10px;}
+    .px-step {
+      width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
+      background: #163041; color: #8ae4dc; font-weight: 800; margin-bottom: 12px;
+    }
+    .px-plot {width: 100%; border-radius: 16px; border: 1px solid #22384d; margin-top: 12px;}
+    .px-status {
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      border: 1px solid #244357;
+      margin-bottom: 10px;
+    }
+    .px-status-ready {background: #0f1d2a; color: #cde4f0;}
+    .px-status-ok {background: rgba(79, 209, 197, 0.10); color: #8ae4dc; border-color: #285050;}
+    .px-status-error {background: rgba(255, 143, 135, 0.12); color: #ffd4cf; border-color: #5d3330;}
+    .px-session-card {display: grid; gap: 16px;}
+    .px-session-grid {grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;}
+    .px-session-grid div {
+      border-radius: 14px; border: 1px solid #22384d; background: #132536; padding: 12px;
+      display: grid; gap: 4px;
+    }
+    .px-session-grid strong {font-size: 0.78rem; color: #8ae4dc; text-transform: uppercase; letter-spacing: 0.05em;}
+    .px-session-grid span {color: #eef4f8;}
+    .px-note {border-left: 3px solid #4fd1c5; padding-left: 12px; color: #eef4f8;}
+    .px-note-muted {border-left-color: #365065; color: #9ab0c4;}
+    @media (max-width: 1024px) {
+      .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid {grid-template-columns: 1fr;}
+    }
+    """
+
+
 def _build_overview_html(payload: dict[str, Any]) -> str:
     task_cards = "".join(
         f"""
@@ -574,6 +674,26 @@ def _build_api_html() -> str:
     """
 
 
+def _render_home_html() -> HTMLResponse:
+    payload = _load_dashboard_payload()
+    return HTMLResponse(
+        f"""
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>PrivacyOps-X</title>
+            <style>{_shell_css()}</style>
+          </head>
+          <body>
+            {_build_overview_html(payload)}
+          </body>
+        </html>
+        """
+    )
+
+
 def _status_html(message: str, *, kind: str = "ready") -> str:
     kind_class = {
         "ready": "px-status-ready",
@@ -743,88 +863,7 @@ def _build_gradio_demo() -> gr.Blocks:
             "state": PrivacyOpsState.model_json_schema(),
         }
     )
-    css = """
-    .gradio-container {background: linear-gradient(180deg, #08131d 0%, #0a1622 100%) !important;}
-    .px-shell {display: grid; gap: 18px;}
-    .px-hero, .px-grid {display: grid; gap: 16px;}
-    .px-hero {grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.9fr);}
-    .px-card {
-      border: 1px solid #22384d;
-      border-radius: 20px;
-      padding: 20px;
-      background: #0f1d2a;
-      color: #eef4f8;
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.20);
-    }
-    .px-card p, .px-card li {color: #9ab0c4;}
-    .px-summary-card ul, .px-task-card ul, .px-card ul {margin: 12px 0 0; padding-left: 18px;}
-    .px-eyebrow, .px-chip, .px-kicker {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #244357;
-      color: #8ae4dc;
-      background: rgba(79, 209, 197, 0.08);
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .px-hero h1 {margin: 10px 0 8px; font-size: clamp(2.5rem, 4vw, 3.6rem); line-height: 1.02;}
-    .px-lead {margin: 0; color: #9ab0c4; font-size: 1.04rem; max-width: 62ch;}
-    .px-link-row {display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;}
-    .px-link-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 42px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      text-decoration: none;
-      color: #eef4f8;
-      border: 1px solid #2a465d;
-      background: #10202d;
-      font-weight: 700;
-    }
-    .px-link-button.px-primary {background: #4fd1c5; color: #08212a; border-color: transparent;}
-    .px-section-head {display: grid; gap: 6px; margin-bottom: 2px;}
-    .px-section-head h2 {margin: 0; color: #eef4f8;}
-    .px-section-head p {margin: 0; color: #9ab0c4;}
-    .px-metrics-grid {grid-template-columns: repeat(4, minmax(0, 1fr));}
-    .px-story-grid, .px-task-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
-    .px-two-up {grid-template-columns: repeat(2, minmax(0, 1fr));}
-    .px-metric-value {font-size: 2rem; font-weight: 800; margin-top: 10px;}
-    .px-step {
-      width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
-      background: #163041; color: #8ae4dc; font-weight: 800; margin-bottom: 12px;
-    }
-    .px-plot {width: 100%; border-radius: 16px; border: 1px solid #22384d; margin-top: 12px;}
-    .px-status {
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-weight: 700;
-      border: 1px solid #244357;
-      margin-bottom: 10px;
-    }
-    .px-status-ready {background: #0f1d2a; color: #cde4f0;}
-    .px-status-ok {background: rgba(79, 209, 197, 0.10); color: #8ae4dc; border-color: #285050;}
-    .px-status-error {background: rgba(255, 143, 135, 0.12); color: #ffd4cf; border-color: #5d3330;}
-    .px-session-card {display: grid; gap: 16px;}
-    .px-session-grid {grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;}
-    .px-session-grid div {
-      border-radius: 14px; border: 1px solid #22384d; background: #132536; padding: 12px;
-      display: grid; gap: 4px;
-    }
-    .px-session-grid strong {font-size: 0.78rem; color: #8ae4dc; text-transform: uppercase; letter-spacing: 0.05em;}
-    .px-session-grid span {color: #eef4f8;}
-    .px-note {border-left: 3px solid #4fd1c5; padding-left: 12px; color: #eef4f8;}
-    .px-note-muted {border-left-color: #365065; color: #9ab0c4;}
-    @media (max-width: 1024px) {
-      .px-hero, .px-metrics-grid, .px-story-grid, .px-task-grid, .px-two-up, .px-session-grid {grid-template-columns: 1fr;}
-    }
-    """
+    css = _shell_css()
 
     with gr.Blocks(
         title="PrivacyOps-X",
@@ -1535,8 +1574,8 @@ def dashboard() -> str:
 @app.get("/", include_in_schema=False)
 @app.get("/web", include_in_schema=False)
 @app.get("/web/", include_in_schema=False)
-def interface_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/playground", status_code=307)
+def interface_redirect() -> HTMLResponse:
+    return _render_home_html()
 
 
 app = gr.mount_gradio_app(app, _build_gradio_demo(), path="/playground")
