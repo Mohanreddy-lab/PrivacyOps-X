@@ -14,6 +14,7 @@ def test_root_endpoint_renders_homepage() -> None:
     assert "What this project does" in response.text
     assert "View results" in response.text
     assert "Open playground" in response.text
+    assert 'href="/playground/"' in response.text
 
 
 def test_playground_endpoint_renders_ui() -> None:

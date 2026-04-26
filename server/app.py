@@ -548,7 +548,7 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
             ask for review, and give a safe final answer.
           </p>
           <div class="px-link-row">
-            <a class="px-link-button px-primary" href="/playground">Open playground</a>
+            <a class="px-link-button px-primary" href="/playground/">Open playground</a>
             <a class="px-link-button px-primary" href="/dashboard">View results</a>
             <a class="px-link-button" href="/docs">API docs</a>
             <a class="px-link-button" href="/schema">Schema</a>
