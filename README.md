@@ -56,8 +56,8 @@ Use this section as the final judge-facing index. If you publish new public mate
 - **Training guide:** [`TRAINING.md`](TRAINING.md)
 - **Full technical writeup:** [`blog.md`](blog.md)
 - **Round 2 submission brief:** [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md)
-- **Slides / PPT (add your public Drive or PDF link here):** `PASTE_PUBLIC_SLIDES_LINK_HERE`
-- **Short video or public mini-blog link (optional):** `PASTE_PUBLIC_VIDEO_OR_BLOG_LINK_HERE`
+- **Slides / PPT and documentation folder:** [Google Drive folder](https://drive.google.com/drive/folders/1S3gpQhHQt-JoBhAeZqWcJbI3AmrVXzZ2)
+- **Short video or public mini-blog link (optional):** [HF blog post](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final/blob/main/blog.md)
 - **Additional documentation bundle:** [`README.md`](README.md), [`TRAINING.md`](TRAINING.md), [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md), [`blog.md`](blog.md)
 
 ## Why this benchmark exists

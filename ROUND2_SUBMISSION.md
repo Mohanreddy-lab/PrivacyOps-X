@@ -11,8 +11,8 @@ This section is the fast path for validators and judges.
 - **Open notebook in Colab:** [Open in Colab](https://colab.research.google.com/github/Mohanreddy-lab/PrivacyOps-X/blob/main/notebooks/privacyops_x_trl_colab.ipynb)
 - **Training guide:** [`TRAINING.md`](TRAINING.md)
 - **Technical writeup:** [`blog.md`](blog.md)
-- **Slides / PPT public URL:** `PASTE_PUBLIC_SLIDES_LINK_HERE`
-- **Short video or external public writeup:** `PASTE_PUBLIC_VIDEO_OR_BLOG_LINK_HERE`
+- **Slides / PPT and documentation folder:** [Google Drive folder](https://drive.google.com/drive/folders/1S3gpQhHQt-JoBhAeZqWcJbI3AmrVXzZ2)
+- **Short video or external public writeup:** [HF blog post](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final/blob/main/blog.md)
 
 ## 1) Problem Statement
 

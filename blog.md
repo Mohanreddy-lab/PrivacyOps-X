@@ -29,8 +29,8 @@ This repository is organized so judges can reach every important artifact from o
 - **Training guide:** [`TRAINING.md`](TRAINING.md)
 - **README / judge index:** [`README.md`](README.md)
 - **Round 2 brief:** [`ROUND2_SUBMISSION.md`](ROUND2_SUBMISSION.md)
-- **Slides / PPT public URL:** `PASTE_PUBLIC_SLIDES_LINK_HERE`
-- **Short video or external public writeup:** `PASTE_PUBLIC_VIDEO_OR_BLOG_LINK_HERE`
+- **Slides / PPT and documentation folder:** [Google Drive folder](https://drive.google.com/drive/folders/1S3gpQhHQt-JoBhAeZqWcJbI3AmrVXzZ2)
+- **Short video or external public writeup:** [HF blog post](https://huggingface.co/spaces/mohareddy1423/PrivacyOps-X-final/blob/main/blog.md)
 
 If you publish your slides or a short YouTube walkthrough, add the public URLs in the README section called **Public materials and presentation links** so validation can find them immediately.
 
