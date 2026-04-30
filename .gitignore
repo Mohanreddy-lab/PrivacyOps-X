@@ -11,6 +11,8 @@ outputs/checkpoints/
 outputs/screenshots/
 !outputs/logs/.gitkeep
 !outputs/evals/.gitkeep
+!outputs/evals/sft_tiny_checkpoint.json
+!outputs/evals/model_smoke.json
 !outputs/plots/.gitkeep
 .env
 .env.*

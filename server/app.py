@@ -651,7 +651,7 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
                 "The same agent gets better after feedback and retry.",
             ),
             _gradio_metric_card(
-                "Trained checkpoint",
+                "Saved checkpoint",
                 trained_score,
                 checkpoint_caption,
             ),
@@ -1807,7 +1807,7 @@ def dashboard() -> str:
             _gradio_metric_card("Baseline", baseline_score, "Score before improvement"),
             _gradio_metric_card("Improved", improved_score, "Score after improvement"),
             _gradio_metric_card(
-                "Trained model",
+                "Saved checkpoint",
                 sft_score,
                 "Current saved checkpoint result" if payload["sft_score"] is not None else "Checkpoint eval not available yet",
             ),
