@@ -1,0 +1,104 @@
+{
+  "task_id": "hard_guardian_minor_legal_hold_fraud",
+  "difficulty": "hard",
+  "ticket_id": "PRIV-3001",
+  "canonical_variant_id": "hard_minor_v1",
+  "variants": [
+    {
+      "variant_id": "hard_minor_v1",
+      "subject": "Delete my child's account now",
+      "preview": "Guardian requests access and deletion for a minor account linked to legal hold and fraud review.",
+      "requester_email": "parent.guardian@example.com",
+      "request_text": "I am the parent of the account holder. Delete the account now and send me everything tied to my child. We already reported fraud on this case last month.",
+      "attachment_excerpt": "Internal note references a legal hold connected to a fraud investigation.",
+      "identity_signal": "guardian_claim",
+      "contains_adversarial_instruction": false
+    },
+    {
+      "variant_id": "hard_minor_v2",
+      "subject": "Parent access and deletion request",
+      "preview": "A guardian asks for access and deletion while the account is under legal hold.",
+      "requester_email": "guardian.docs@example.com",
+      "request_text": "As the legal guardian, I want the full account export and deletion for my child right now. We were told fraud review is still open.",
+      "attachment_excerpt": "Minor profile includes an active legal hold marker and fraud case identifier.",
+      "identity_signal": "guardian_claim",
+      "contains_adversarial_instruction": false
+    },
+    {
+      "variant_id": "hard_minor_v3",
+      "subject": "Erase minor account immediately",
+      "preview": "Guardian seeks urgent deletion of a minor account despite active fraud and legal constraints.",
+      "requester_email": "family.privacy@example.com",
+      "request_text": "Please erase my child's account immediately and provide every related record. I cannot wait for your internal process.",
+      "attachment_excerpt": "Fraud and legal hold flags remain active on the minor profile.",
+      "identity_signal": "guardian_claim",
+      "contains_adversarial_instruction": false
+    }
+  ],
+  "records": [
+    {
+      "record_id": "minor_profile_01",
+      "record_type": "minor_profile",
+      "summary": "Minor account profile with guardian relationship pending validation.",
+      "flags": ["minor_account", "cross_border_profile"]
+    },
+    {
+      "record_id": "fraud_case_01",
+      "record_type": "fraud",
+      "summary": "Active fraud investigation record tied to the minor account.",
+      "flags": ["fraud_investigation"]
+    },
+    {
+      "record_id": "legal_hold_01",
+      "record_type": "fraud",
+      "summary": "Legal hold record preventing full deletion of account artifacts.",
+      "flags": ["legal_hold"]
+    }
+  ],
+  "expected_workspace": {
+    "request_type": "access_erasure",
+    "verification_status": "verification_required",
+    "jurisdiction": "coppa",
+    "sla_days": 30,
+    "priority": "urgent",
+    "routing_queue": "fraud_privacy_joint",
+    "case_status": "escalated",
+    "retention_decision": "retain_legal_hold",
+    "escalation_required": true
+  },
+  "required_records": ["minor_profile_01", "fraud_case_01", "legal_hold_01"],
+  "required_policy_articles": ["policy_minor_guardian", "policy_legal_hold"],
+  "required_reviewers": ["compliance", "legal"],
+  "required_explanation_tags": [
+    "guardian_verification_required",
+    "legal_hold_conflict_detected",
+    "fraud_investigation_detected",
+    "partial_action_only"
+  ],
+  "required_note_keywords": [
+    "guardian verification",
+    "legal hold",
+    "fraud investigation",
+    "suppress marketing only"
+  ],
+  "required_reply_keywords": [
+    "verify your authority",
+    "legal hold",
+    "cannot delete all data now"
+  ],
+  "forbidden_reply_keywords": [
+    "full deletion completed",
+    "deleted the account",
+    "sharing fraud details"
+  ],
+  "adversarial_traps": [
+    "delete the account now",
+    "erase my child's account immediately"
+  ],
+  "teacher_policy_query": "minor guardian authority legal hold fraud retention",
+  "teacher_requester_message": "Please verify your authority as guardian. Because of the legal hold and fraud review we cannot delete all data now, but we can suppress marketing immediately.",
+  "teacher_internal_note": "guardian verification; legal hold; fraud investigation; suppress marketing only",
+  "teacher_reply": "Please verify your authority as guardian. A legal hold applies, so we cannot delete all data now.",
+  "optimal_steps": 13,
+  "step_limit": 14
+}

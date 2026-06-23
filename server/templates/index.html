@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PrivacyOps-X — Safety-Critical AI Benchmark</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#10B981",
+          "secondary": "#A3E635",
+          "background": "#050805",
+          "surface": "#050805",
+          "surface-container": "#0a0f0a",
+          "on-surface-variant": "#bacac5",
+          "on-background": "#d4e4fa",
+          "primary-fixed": "#10B981",
+          "primary-fixed-dim": "#059669",
+          "secondary-fixed": "#A3E635",
+        },
+        borderRadius: {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        fontFamily: {
+          "body-md": ["Geist"],
+          "headline-md": ["Space Grotesk"],
+          "display-lg": ["Space Grotesk"],
+          "label-caps": ["Geist Mono"],
+          "code-sm": ["Geist Mono"],
+          "body-lg": ["Geist"]
+        },
+        fontSize: {
+          "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+          "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+          "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+          "display-lg-mobile": ["40px", {"lineHeight": "1.2", "fontWeight": "700"}],
+          "code-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+          "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+        },
+        animation: {
+          "gradient-x": "gradient-x 3s ease infinite",
+          "pulse-grid": "pulse-grid 4s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+        },
+        keyframes: {
+          "gradient-x": {
+            "0%, 100%": {"background-size": "200% 200%", "background-position": "left center"},
+            "50%": {"background-size": "200% 200%", "background-position": "right center"}
+          },
+          "pulse-grid": {
+            "0%, 100%": {"opacity": "1"},
+            "50%": {"opacity": ".5"}
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .grid-bg {
+    background-image:
+      radial-gradient(circle at center, rgba(16,185,129,0.10) 1px, transparent 1px),
+      radial-gradient(circle at center, rgba(16,185,129,0.05) 1px, transparent 1px);
+    background-size: 32px 32px, 8px 8px;
+    background-position: center center;
+  }
+  .glass-panel {
+    background: rgba(5,8,5,0.60);
+    backdrop-filter: blur(64px);
+    -webkit-backdrop-filter: blur(64px);
+    border: 1px solid rgba(16,185,129,0.30);
+    box-shadow: inset 0 0 20px rgba(16,185,129,0.05);
+  }
+  .panel-glow-corner {
+    position: absolute; top: 0; left: 0;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle at top left, rgba(16,185,129,0.20), transparent 70%);
+    pointer-events: none;
+  }
+  .neon-glow-teal {
+    box-shadow: 0 0 20px rgba(16,185,129,0.50), inset 0 0 10px rgba(16,185,129,0.20);
+  }
+  .neon-glow-lime { box-shadow: 0 0 10px rgba(163,230,53,0.30), inset 0 0 5px rgba(163,230,53,0.10); }
+  .neon-glow-lime:hover { box-shadow: 0 0 20px rgba(163,230,53,0.60), inset 0 0 10px rgba(163,230,53,0.30); }
+  .btn-sheen {
+    position: relative; overflow: hidden;
+    background: #10B981; transition: 0.5s;
+  }
+  .btn-sheen::after {
+    content: ''; position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(to bottom right, rgba(163,230,53,0) 0%, rgba(163,230,53,0.6) 50%, rgba(163,230,53,0) 100%);
+    transform: rotate(45deg); transition: all 0.3s ease; opacity: 0;
+  }
+  .btn-sheen:hover::after { opacity: 1; transform: rotate(45deg) translate(50%,50%); animation: sheen-sweep 1s ease-out; }
+  @keyframes sheen-sweep {
+    0% { transform: rotate(45deg) translate(-50%,-50%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: rotate(45deg) translate(50%,50%); opacity: 0; }
+  }
+  .text-glow-bloom { text-shadow: 0 0 15px rgba(16,185,129,0.40); }
+  .border-bloom { box-shadow: 0 0 8px rgba(16,185,129,0.20); }
+  .icon-bloom { filter: drop-shadow(0 0 8px currentColor); }
+</style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md overflow-x-hidden antialiased selection:bg-primary/30 selection:text-primary">
+
+<!-- Shader Background -->
+<div class="fixed inset-0 z-[-3] bg-[#050805]"></div>
+<div class="fixed inset-0 z-[-2] opacity-100">
+  <canvas id="shader-canvas" style="display:block;width:100%;height:100%;position:absolute;inset:0;"></canvas>
+</div>
+<div class="fixed inset-0 z-0 grid-bg pointer-events-none animate-pulse-grid opacity-70"></div>
+
+<!-- Nav -->
+<nav class="fixed top-0 left-0 w-full z-50 bg-background/50 backdrop-blur-3xl border-b border-primary/20 border-bloom">
+  <div class="flex justify-between items-center px-8 md:px-16 h-20 w-full max-w-[1440px] mx-auto">
+    <a class="font-headline-md text-headline-md text-primary tracking-tight text-glow-bloom" href="/">PrivacyOps-X</a>
+    <div class="hidden md:flex gap-8 items-center">
+      <a class="text-on-surface-variant font-medium hover:text-white transition-all duration-300" href="/playground">Playground</a>
+      <a class="text-on-surface-variant font-medium hover:text-white transition-all duration-300" href="/dashboard">Dashboard</a>
+      <a class="text-on-surface-variant font-medium hover:text-white transition-all duration-300" href="/docs">API Docs</a>
+      <a class="text-on-surface-variant font-medium hover:text-white transition-all duration-300" href="/judge-report">Judge Report</a>
+    </div>
+    <div class="hidden md:flex gap-4 items-center">
+      <a href="/playground" class="bg-primary/10 text-primary border border-primary/50 px-6 py-2 rounded font-label-caps text-label-caps hover:bg-primary/20 transition-all hover:scale-105 active:scale-95 shadow-[0_0_10px_rgba(16,185,129,0.2)] hover:shadow-[0_0_15px_rgba(16,185,129,0.4)]">Open Playground</a>
+    </div>
+  </div>
+</nav>
+
+<main class="relative z-10 pt-32 pb-32 max-w-[1440px] mx-auto px-6 md:px-16 flex flex-col gap-y-32">
+
+  <!-- Hero -->
+  <section class="flex flex-col items-center text-center mt-20 md:mt-32">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/50 bg-primary/10 neon-glow-teal mb-8">
+      <span class="w-2 h-2 rounded-full bg-primary animate-pulse icon-bloom"></span>
+      <span class="font-label-caps text-label-caps text-primary tracking-wider font-bold">LIVE BENCHMARK</span>
+    </div>
+    <h1 class="font-display-lg-mobile md:font-display-lg mb-6 max-w-4xl tracking-tight text-8xl md:text-9xl bg-clip-text text-transparent bg-gradient-to-r from-[#10B981] to-[#A3E635] animate-gradient-x drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+      PrivacyOps-X
+    </h1>
+    <p class="font-body-lg text-body-lg text-white max-w-2xl mb-12 leading-relaxed drop-shadow-md font-medium">
+      A benchmark for privacy operations. It checks whether an AI agent can handle real privacy cases safely, follow policy, use evidence, and finish with the right final decision.
+    </p>
+    <div class="flex flex-wrap justify-center gap-6 mb-12">
+      <a href="/playground" class="btn-sheen text-background px-8 py-4 rounded font-label-caps text-label-caps font-bold tracking-widest neon-glow-teal hover:scale-[1.05] transition-transform shadow-[0_0_20px_rgba(16,185,129,0.5)] border border-primary/50">
+        Open Playground
+      </a>
+      <a href="/dashboard" class="px-8 py-4 rounded border-2 border-[#A3E635] text-[#A3E635] font-label-caps text-label-caps font-bold tracking-widest neon-glow-lime transition-all bg-[#A3E635]/5">
+        View Results
+      </a>
+    </div>
+    <div class="flex flex-wrap justify-center gap-8 text-on-surface-variant font-label-caps text-label-caps font-medium">
+      <a class="hover:text-white transition-colors drop-shadow" href="/docs">API Docs</a>
+      <span class="w-1 h-1 rounded-full bg-primary/50 self-center"></span>
+      <a class="hover:text-white transition-colors drop-shadow" href="/schema">Schema</a>
+      <span class="w-1 h-1 rounded-full bg-primary/50 self-center"></span>
+      <a class="hover:text-white transition-colors drop-shadow" href="/judge-report">Project Summary</a>
+      <span class="w-1 h-1 rounded-full bg-primary/50 self-center"></span>
+      <a class="hover:text-white transition-colors drop-shadow" href="/curriculum">Curriculum</a>
+    </div>
+  </section>
+
+  <!-- What You Should Understand -->
+  <section class="w-full max-w-5xl mx-auto">
+    <div class="glass-panel rounded-xl p-8 md:p-12 relative overflow-hidden">
+      <div class="panel-glow-corner"></div>
+      <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -z-10"></div>
+      <h2 class="font-headline-md text-headline-md text-white mb-8 border-b border-primary/20 pb-4 text-glow-bloom">
+        What you should understand
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+        <div class="flex items-start gap-4 group">
+          <div class="p-3 rounded-lg bg-surface-container/80 border border-primary/20 text-primary group-hover:border-primary/50 transition-colors shadow-inner">
+            <span class="material-symbols-outlined icon-bloom" style="font-variation-settings:'FILL' 0">warning</span>
+          </div>
+          <div>
+            <h3 class="font-label-caps text-label-caps text-white mb-2 font-bold drop-shadow">Why</h3>
+            <p class="font-body-md text-body-md text-white/80">Privacy workflows are high risk — fluent answers are not enough.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 group">
+          <div class="p-3 rounded-lg bg-surface-container/80 border border-primary/20 text-secondary group-hover:border-secondary/50 transition-colors shadow-inner">
+            <span class="material-symbols-outlined icon-bloom" style="font-variation-settings:'FILL' 0">terminal</span>
+          </div>
+          <div>
+            <h3 class="font-label-caps text-label-caps text-white mb-2 font-bold drop-shadow">How</h3>
+            <p class="font-body-md text-body-md text-white/80">Use typed actions like <code class="text-secondary bg-secondary/10 px-1 rounded border border-secondary/30">inspect_case</code>, <code class="text-secondary bg-secondary/10 px-1 rounded border border-secondary/30">open_record</code>, <code class="text-secondary bg-secondary/10 px-1 rounded border border-secondary/30">request_review</code>.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 group">
+          <div class="p-3 rounded-lg bg-surface-container/80 border border-primary/20 text-primary-fixed-dim group-hover:border-primary-fixed-dim/50 transition-colors shadow-inner">
+            <span class="material-symbols-outlined icon-bloom" style="font-variation-settings:'FILL' 0">visibility</span>
+          </div>
+          <div>
+            <h3 class="font-label-caps text-label-caps text-white mb-2 font-bold drop-shadow">What you see</h3>
+            <p class="font-body-md text-body-md text-white/80">Records, policy, requester messages, review output, risk, milestones, score.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 group">
+          <div class="p-3 rounded-lg bg-surface-container/80 border border-primary/20 text-secondary group-hover:border-secondary/50 transition-colors shadow-inner">
+            <span class="material-symbols-outlined icon-bloom" style="font-variation-settings:'FILL' 0">analytics</span>
+          </div>
+          <div>
+            <h3 class="font-label-caps text-label-caps text-white mb-2 font-bold drop-shadow">What this proves</h3>
+            <p class="font-body-md text-body-md text-white/80">Evaluation, self-improvement, and model training all in one environment.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Execution Flow -->
+  <section class="w-full">
+    <h2 class="font-headline-md text-headline-md text-center text-white mb-16 text-glow-bloom">Execution Flow</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="glass-panel rounded-xl p-8 relative hover:-translate-y-2 transition-transform duration-300 group">
+        <div class="panel-glow-corner"></div>
+        <div class="absolute top-4 right-4 text-4xl font-bold text-white/5 group-hover:text-primary/20 transition-colors">01</div>
+        <div class="w-12 h-12 rounded-full border border-primary/40 flex items-center justify-center text-primary mb-6 group-hover:neon-glow-teal transition-all bg-primary/5">
+          <span class="material-symbols-outlined icon-bloom">folder_open</span>
+        </div>
+        <h3 class="font-body-lg text-body-lg text-white mb-2 font-bold drop-shadow">Pick a privacy case</h3>
+        <p class="font-body-md text-body-md text-white/70">Select from easy, medium, hard, or finale scenarios.</p>
+      </div>
+      <div class="glass-panel rounded-xl p-8 relative hover:-translate-y-2 transition-transform duration-300 group">
+        <div class="panel-glow-corner"></div>
+        <div class="absolute top-4 right-4 text-4xl font-bold text-white/5 group-hover:text-secondary/20 transition-colors">02</div>
+        <div class="w-12 h-12 rounded-full border border-secondary/40 flex items-center justify-center text-secondary mb-6 group-hover:neon-glow-lime transition-all bg-secondary/5">
+          <span class="material-symbols-outlined icon-bloom">smart_toy</span>
+        </div>
+        <h3 class="font-body-lg text-body-lg text-white mb-2 font-bold drop-shadow">Let the agent act</h3>
+        <p class="font-body-md text-body-md text-white/70">Agent navigates policy and executes typed actions step by step.</p>
+      </div>
+      <div class="glass-panel rounded-xl p-8 relative hover:-translate-y-2 transition-transform duration-300 group">
+        <div class="panel-glow-corner"></div>
+        <div class="absolute top-4 right-4 text-4xl font-bold text-white/5 group-hover:text-primary/20 transition-colors">03</div>
+        <div class="w-12 h-12 rounded-full border border-primary/40 flex items-center justify-center text-primary mb-6 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all bg-primary/5">
+          <span class="material-symbols-outlined icon-bloom">update</span>
+        </div>
+        <h3 class="font-body-lg text-body-lg text-white mb-2 font-bold drop-shadow">Watch state change</h3>
+        <p class="font-body-md text-body-md text-white/70">Monitor milestones, risk score, and context updates in real-time.</p>
+      </div>
+      <div class="glass-panel rounded-xl p-8 relative hover:-translate-y-2 transition-transform duration-300 group">
+        <div class="panel-glow-corner"></div>
+        <div class="absolute top-4 right-4 text-4xl font-bold text-white/5 group-hover:text-secondary/20 transition-colors">04</div>
+        <div class="w-12 h-12 rounded-full border border-secondary/40 flex items-center justify-center text-secondary mb-6 group-hover:shadow-[0_0_20px_rgba(163,230,53,0.4)] transition-all bg-secondary/5">
+          <span class="material-symbols-outlined icon-bloom">fact_check</span>
+        </div>
+        <h3 class="font-body-lg text-body-lg text-white mb-2 font-bold drop-shadow">Read the score</h3>
+        <p class="font-body-md text-body-md text-white/70">Final evaluation based on safety, evidence, and accuracy.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Verify -->
+  <section class="w-full max-w-5xl mx-auto">
+    <h2 class="font-label-caps text-label-caps text-primary mb-8 uppercase tracking-widest flex items-center gap-4">
+      <span class="w-8 h-[1px] bg-primary"></span> Quick Verification
+    </h2>
+    <div class="glass-panel rounded-xl overflow-hidden">
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-primary/20 bg-black/40">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
+        <span class="w-3 h-3 rounded-full bg-[#febc2e]"></span>
+        <span class="w-3 h-3 rounded-full bg-[#28c840]"></span>
+        <span class="ml-4 font-label-caps text-[11px] text-on-surface-variant">shell — PrivacyOps-X API</span>
+      </div>
+      <div class="p-6 font-code-sm text-[13px] leading-relaxed bg-black/60">
+        <div class="text-on-surface-variant mb-1"><span class="text-primary/60 mr-3">$</span><span class="text-primary/70"># reset a medium case</span></div>
+        <div class="text-white mb-1"><span class="text-primary/60 mr-3">$</span>curl -X POST /reset -H <span class="text-secondary">"Content-Type: application/json"</span> \</div>
+        <div class="text-white mb-4 pl-8">-d <span class="text-secondary">'{"task_id":"medium_unverified_erasure_multi_account","seed":0}'</span></div>
+        <div class="text-on-surface-variant mb-1"><span class="text-primary/60 mr-3">$</span><span class="text-primary/70"># send first action</span></div>
+        <div class="text-white"><span class="text-primary/60 mr-3">$</span>curl -X POST /step -H <span class="text-secondary">"Content-Type: application/json"</span> \</div>
+        <div class="text-white pl-8">-d <span class="text-secondary">'{"action":{"action_type":"inspect_case"}}'</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Floating Stat Chip -->
+<div class="fixed bottom-8 right-8 z-40 hidden lg:flex">
+  <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3 border-primary/40 neon-glow-teal">
+    <span class="w-2 h-2 rounded-full bg-primary animate-pulse icon-bloom"></span>
+    <span class="font-code-sm text-[12px] text-white tracking-wider">Self-improvement score <span class="text-secondary font-bold">0.9519</span></span>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-surface/80 backdrop-blur-xl w-full py-16 border-t border-primary/20 relative z-10 mt-auto border-bloom">
+  <div class="flex flex-col md:flex-row justify-between items-center px-8 md:px-16 max-w-[1440px] mx-auto gap-8">
+    <div class="font-headline-md text-headline-md text-white text-glow-bloom">PrivacyOps-X</div>
+    <div class="flex flex-wrap justify-center gap-8">
+      <a class="font-label-caps text-label-caps text-white/70 hover:text-primary transition-colors" href="/playground">Playground</a>
+      <a class="font-label-caps text-label-caps text-white/70 hover:text-primary transition-colors" href="/dashboard">Dashboard</a>
+      <a class="font-label-caps text-label-caps text-white/70 hover:text-primary transition-colors" href="/docs">API Docs</a>
+      <a class="font-label-caps text-label-caps text-white/70 hover:text-primary transition-colors" href="/judge-report">Judge Report</a>
+    </div>
+    <div class="font-label-caps text-label-caps text-white/50">© 2025 PrivacyOps-X. Secure. Sovereign. Anonymous.</div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas');
+  function syncSize() {
+    const w = canvas.clientWidth || 1280, h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  }
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(syncSize).observe(canvas);
+  syncSize();
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position; varying vec2 v_texCoord;
+void main() { v_texCoord = a_position * 0.5 + 0.5; gl_Position = vec4(a_position, 0.0, 1.0); }`;
+  const fs = `precision highp float;
+uniform float u_time; uniform vec2 u_resolution; varying vec2 v_texCoord;
+float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+void main() {
+  vec2 uv = v_texCoord;
+  vec2 grid_uv = uv * vec2(20.0, 10.0);
+  vec3 bg = vec3(0.02, 0.03, 0.02);
+  float speed = 2.0;
+  float column = floor(grid_uv.x);
+  float offset = hash(vec2(column, 31.2)) * 10.0;
+  float row = fract(grid_uv.y + u_time * (0.5 + hash(vec2(column)) * 0.5) * speed + offset);
+  float rain = pow(row, 8.0) * step(0.9, hash(vec2(column, floor(grid_uv.y + u_time * speed + offset))));
+  vec3 emerald = vec3(0.06, 0.72, 0.5);
+  vec2 grid = abs(fract(uv * 40.0 - 0.5) - 0.5) / fwidth(uv * 40.0);
+  float line = 1.0 - min(grid.x, grid.y);
+  float grid_mask = smoothstep(0.0, 1.0, line) * 0.05;
+  float pulse = sin(u_time * 0.5) * 0.5 + 0.5;
+  grid_mask *= (0.8 + 0.2 * pulse);
+  vec3 color = mix(bg, emerald, rain * 0.15);
+  color += emerald * grid_mask;
+  gl_FragColor = vec4(color, 1.0);
+}`;
+  function cs(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    if (r.width && r.height) { mouse.x = (e.clientX - r.left) / r.width * canvas.width; mouse.y = (1.0 - (e.clientY - r.top) / r.height) * canvas.height; }
+  });
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</body>
+</html>

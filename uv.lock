@@ -1,0 +1,4 @@
+# Placeholder lockfile for local validation in environments where the native `uv`
+# binary cannot run because of host application-control policy. The project
+# Dockerfile installs runtime dependencies directly with `pip`, so container
+# builds do not depend on this file during validation.

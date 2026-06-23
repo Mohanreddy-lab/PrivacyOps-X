@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "privacyops-x"
+version = "0.1.0"
+description = "Safety-critical privacy operations benchmark for OpenEnv"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "openenv-core[core]>=0.2.3",
+    "fastapi>=0.135.0",
+    "uvicorn>=0.43.0",
+    "openai>=2.26.0",
+    "httpx>=0.28.0",
+    "requests>=2.32.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+]
+train = [
+    "datasets>=4.0.0",
+    "transformers>=4.57.0",
+    "trl>=0.25.0",
+    "peft>=0.17.0",
+    "accelerate>=1.10.0",
+    "matplotlib>=3.10.0",
+]
+
+[project.scripts]
+server = "privacyops_x.server.app:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["privacyops_x", "privacyops_x.server"]
+package-dir = { "privacyops_x" = ".", "privacyops_x.server" = "server" }

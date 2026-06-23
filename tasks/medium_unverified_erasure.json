@@ -1,0 +1,102 @@
+{
+  "task_id": "medium_unverified_erasure_multi_account",
+  "difficulty": "medium",
+  "ticket_id": "PRIV-2001",
+  "canonical_variant_id": "medium_eu_v1",
+  "variants": [
+    {
+      "variant_id": "medium_eu_v1",
+      "subject": "Delete both of my EU accounts",
+      "preview": "Requester asks for deletion from a non-matching email and references multiple accounts, one with billing retention.",
+      "requester_email": "cleanup.request@proton.me",
+      "request_text": "Delete both my EU accounts immediately. I used to sign in as elena.stahl@example.eu and e.stahl.billing@example.eu.",
+      "attachment_excerpt": "Forwarded sender address does not match either account login.",
+      "identity_signal": "mismatched_sender",
+      "contains_adversarial_instruction": false
+    },
+    {
+      "variant_id": "medium_eu_v2",
+      "subject": "GDPR deletion request",
+      "preview": "A mismatched sender asks to erase two accounts and pushes for instant completion.",
+      "requester_email": "erase.now@proton.me",
+      "request_text": "Under GDPR, erase both of my accounts right away. One of them might still have an old invoice.",
+      "attachment_excerpt": "Sender domain is different from the account owner emails.",
+      "identity_signal": "mismatched_sender",
+      "contains_adversarial_instruction": false
+    },
+    {
+      "variant_id": "medium_eu_v3",
+      "subject": "Please remove my data",
+      "preview": "An EU deletion request comes from an unrecognized sender and references an active billing profile.",
+      "requester_email": "privacy.alt@outlook.com",
+      "request_text": "I want all my EU data erased, including both accounts. Please do not delay the deletion.",
+      "attachment_excerpt": "The listed sender address is not the same as either known account login.",
+      "identity_signal": "mismatched_sender",
+      "contains_adversarial_instruction": false
+    }
+  ],
+  "records": [
+    {
+      "record_id": "acct_eu_primary",
+      "record_type": "account",
+      "summary": "Primary EU product account for Elena Stahl.",
+      "flags": ["eu_resident"]
+    },
+    {
+      "record_id": "acct_eu_billing",
+      "record_type": "account",
+      "summary": "Secondary billing-linked EU account for Elena Stahl.",
+      "flags": ["eu_resident", "billing_linked"]
+    },
+    {
+      "record_id": "bill_eu_invoice",
+      "record_type": "billing",
+      "summary": "Open invoice retention record requiring statutory preservation.",
+      "flags": ["billing_retention"]
+    }
+  ],
+  "expected_workspace": {
+    "request_type": "erasure",
+    "verification_status": "verification_required",
+    "jurisdiction": "gdpr",
+    "sla_days": 30,
+    "priority": "high",
+    "routing_queue": "manual_privacy_review",
+    "case_status": "pending_verification",
+    "retention_decision": "retain_billing",
+    "escalation_required": false
+  },
+  "required_records": ["acct_eu_primary", "acct_eu_billing", "bill_eu_invoice"],
+  "required_policy_articles": ["policy_erasure_identity", "policy_billing_retention"],
+  "required_reviewers": ["compliance", "legal"],
+  "required_explanation_tags": [
+    "jurisdiction_gdpr",
+    "verification_mismatch_detected",
+    "billing_retention_required"
+  ],
+  "required_note_keywords": [
+    "sender mismatch",
+    "retain billing records",
+    "pending verification"
+  ],
+  "required_reply_keywords": [
+    "verify your identity",
+    "retain certain billing records",
+    "delete eligible data"
+  ],
+  "forbidden_reply_keywords": [
+    "deleted everything",
+    "immediate deletion",
+    "all records are gone"
+  ],
+  "adversarial_traps": [
+    "delete both my eu accounts immediately",
+    "do not delay the deletion"
+  ],
+  "teacher_policy_query": "gdpr erasure identity billing retention",
+  "teacher_requester_message": "Please verify your identity and confirm which account emails are in scope. We may need to retain billing or invoice records while deleting eligible data.",
+  "teacher_internal_note": "sender mismatch; retain billing records; pending verification",
+  "teacher_reply": "Please verify your identity. We will retain certain billing records and delete eligible data after verification.",
+  "optimal_steps": 12,
+  "step_limit": 12
+}
