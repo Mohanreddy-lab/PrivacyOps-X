@@ -277,6 +277,23 @@ a,button,select,input,[role=button] { cursor: none !important; }
 /* ── FLOATING DATA CHARS (decorative) ───────────────────────────── */
 @keyframes data-rise{0%{transform:translateY(0);opacity:.6;}100%{transform:translateY(-100vh);opacity:0;}}
 .data-char{position:fixed;pointer-events:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(0,207,255,0.22);z-index:0;animation:data-rise linear infinite;}
+
+/* ── CURSOR TRAIL CANVAS ─────────────────────────────────────────── */
+#trail-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+
+/* ── STAT COUNT-UP GLOW ──────────────────────────────────────────── */
+@keyframes stat-pulse{0%,100%{opacity:1;}40%{opacity:.35;}80%{opacity:.9;}}
+.stat-count-glow{animation:stat-pulse .65s ease-in-out 4;}
+
+/* ── HEADING SCRAMBLE flash ──────────────────────────────────────── */
+@keyframes hd-glitch{
+  0%,100%{text-shadow:none;color:inherit;}
+  20%{text-shadow:.04em 0 0 rgba(0,207,255,.7),-.04em 0 0 rgba(124,58,237,.7);color:rgba(255,255,255,.95);}
+  40%{text-shadow:-.04em .02em 0 rgba(0,207,255,.7),.04em -.02em 0 rgba(178,247,70,.5);}
+  60%{text-shadow:.06em 0 0 rgba(124,58,237,.65),-.03em .03em 0 rgba(0,207,255,.5);}
+  80%{text-shadow:-.02em 0 0 rgba(178,247,70,.5),.03em .02em 0 rgba(0,207,255,.6);}
+}
+.hd-glitch{animation:hd-glitch .28s linear forwards;}
 </style>
 </head>
 <body class="min-h-screen antialiased">
@@ -285,6 +302,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
 <div id="cx-dot"></div>
 <div id="cx-orb"></div>
 <canvas id="neural-canvas"></canvas>
+<canvas id="trail-canvas"></canvas>
 <div id="scanner"></div>
 
 <!-- WebGL Aurora -->
@@ -802,6 +820,87 @@ window.addEventListener('scroll', () => {
     el.textContent=DATA[Math.floor(Math.random()*DATA.length)];
     document.body.appendChild(el);
   }
+})();
+
+/* ── 6. CURSOR TRAIL ─────────────────────────────────────────────── */
+(function(){
+  const cv=document.getElementById('trail-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');
+  let W=cv.width=window.innerWidth,H=cv.height=window.innerHeight;
+  window.addEventListener('resize',()=>{W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;},{passive:true});
+  const pts=[];
+  document.addEventListener('mousemove',e=>{
+    pts.push({x:e.clientX,y:e.clientY,t:Date.now()});
+    if(pts.length>80)pts.shift();
+  },{passive:true});
+  (function draw(){
+    ctx.clearRect(0,0,W,H);
+    const now=Date.now();
+    pts.forEach((pt,i)=>{
+      const age=(now-pt.t)/260;if(age>1)return;
+      const frac=i/pts.length;
+      const a=(1-age)*frac*.13;
+      const r=(1-age)*2.6;
+      ctx.beginPath();ctx.arc(pt.x,pt.y,r,0,Math.PI*2);
+      ctx.fillStyle=i%2?'rgba(178,247,70,'+a.toFixed(3)+')':'rgba(0,207,255,'+a.toFixed(3)+')';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ── 7. HERO STATS COUNT-UP ──────────────────────────────────────── */
+(function(){
+  const defs=[
+    {id:'c-improve',v:0.9519,d:4},
+    {id:'c-oracle', v:0.99,  d:4},
+    {id:'c-tasks',  v:4,     d:0},
+  ];
+  const strip=document.querySelector('.glass.rounded-2xl');
+  if(!strip)return;
+  let fired=false;
+  new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(!e.isIntersecting||fired)return;
+      fired=true;
+      defs.forEach(function(s){
+        const el=document.getElementById(s.id);if(!el)return;
+        el.classList.add('stat-count-glow');
+        const start=performance.now();
+        (function tick(now){
+          const p=Math.min((now-start)/1100,1),ease=1-Math.pow(1-p,4);
+          el.textContent=(s.v*ease).toFixed(s.d);
+          if(p<1)requestAnimationFrame(tick);
+          else el.textContent=s.v.toFixed(s.d);
+        })(start);
+      });
+    });
+  },{threshold:.55}).observe(strip);
+})();
+
+/* ── 8. SECTION H2 SCRAMBLE-GLITCH on scroll-in ─────────────────── */
+(function(){
+  const CHARS='01Ω≡∑█▓×≠∞↯#';
+  document.querySelectorAll('section h2').forEach(function(h){
+    const io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(!e.isIntersecting)return;
+        io.unobserve(h);
+        const orig=h.innerHTML,txt=h.textContent;
+        let t=0;
+        h.classList.add('hd-glitch');
+        (function run(){
+          const rev=Math.floor(t*txt.length);
+          h.textContent=txt.split('').map(function(c,i){
+            return c===' '?' ':i<rev?c:CHARS[Math.floor(Math.random()*CHARS.length)];
+          }).join('');
+          if(t<1){t+=.055;requestAnimationFrame(run);}
+          else{h.innerHTML=orig;h.classList.remove('hd-glitch');}
+        })();
+      });
+    },{threshold:.55});
+    io.observe(h);
+  });
 })();
 </script>
 </body>

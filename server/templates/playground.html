@@ -319,6 +319,19 @@ a,button,select,input,[role=button] { cursor: none !important; }
   background:linear-gradient(90deg,transparent 0%,rgba(0,207,255,.65) 35%,rgba(178,247,70,.9) 50%,rgba(0,207,255,.65) 65%,transparent 100%);
   box-shadow:0 0 22px rgba(0,207,255,.6),0 0 70px rgba(0,207,255,.15);
   animation:scan-pg 11s ease-in-out infinite;animation-delay:3s;}
+
+/* ── KEYSTROKE PARTICLE SPARKS ────────────────────────────────────── */
+@keyframes ks-pt{from{transform:translate(-50%,-50%);opacity:1;}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0;}}
+.ks-pt{position:fixed;pointer-events:none;z-index:99985;border-radius:50%;width:3px;height:3px;animation:ks-pt .32s ease-out forwards;}
+
+/* ── DATA STREAM SIDE RIBBONS ─────────────────────────────────────── */
+@keyframes ds-fall{0%{top:-5%;opacity:0;}5%{opacity:.7;}90%{opacity:.5;}100%{top:108%;opacity:0;}}
+.ds-ribbon{position:fixed;top:-5%;width:1px;pointer-events:none;z-index:0;display:flex;flex-direction:column;gap:18px;animation:ds-fall linear infinite;}
+.ds-ribbon span{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(0,207,255,0.18);display:block;line-height:1;}
+
+/* ── SEND BUTTON PULSE RING (persistent aura) ─────────────────────── */
+@keyframes step-aura{0%,100%{box-shadow:0 0 0 0 rgba(178,247,70,0.25),0 0 18px rgba(178,247,70,0.08);}50%{box-shadow:0 0 0 6px rgba(178,247,70,0),0 0 26px rgba(178,247,70,0.18);}}
+.btn-step{animation:step-aura 2.8s ease-in-out infinite;}
 </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -942,6 +955,41 @@ new MutationObserver(function(){
   clearTimeout(_glitchTimer);
   _glitchTimer=setTimeout(function(){statusText.classList.remove('st-glitch');},420);
 }).observe(statusText,{childList:true,characterData:true,subtree:true});
+
+/* ── KEYSTROKE PARTICLE SPARKS ──────────────────────────────────── */
+(function(){
+  const C=['rgba(0,207,255,','rgba(178,247,70,','rgba(124,58,237,'];
+  document.querySelectorAll('textarea,input[type=text],input:not([type])').forEach(function(el){
+    el.addEventListener('keydown',function(e){
+      if(e.key.length>1&&e.key!=='Backspace')return;
+      const r=el.getBoundingClientRect();
+      const x=r.left+r.width*.5,y=r.top+10;
+      for(var i=0;i<6;i++){
+        var ang=(-Math.PI/2)+(Math.random()-.5)*Math.PI*.9;
+        var dist=12+Math.random()*28;
+        var p=document.createElement('div');p.className='ks-pt';
+        p.style.cssText='left:'+x+'px;top:'+y+'px;background:'+C[i%3]+'.85);--dx:'+(Math.cos(ang)*dist).toFixed(1)+'px;--dy:'+(Math.sin(ang)*dist).toFixed(1)+'px;animation-duration:'+(.2+Math.random()*.18).toFixed(2)+'s;animation-delay:'+(Math.random()*.04).toFixed(2)+'s;';
+        document.body.appendChild(p);setTimeout(function(){p.remove();},420);
+      }
+    });
+  });
+})();
+
+/* ── DATA STREAM SIDE RIBBONS ────────────────────────────────────── */
+(function(){
+  var DATA='01アΩ∑≡#${}[];:<>';
+  [8,22,38,54,68,82].forEach(function(pct,idx){
+    var ribbon=document.createElement('div');ribbon.className='ds-ribbon';
+    var dur=7+Math.random()*9,delay=Math.random()*dur;
+    ribbon.style.cssText='left:'+pct+'%;animation-duration:'+dur+'s;animation-delay:-'+delay+'s;';
+    for(var i=0;i<12;i++){
+      var sp=document.createElement('span');
+      sp.textContent=DATA[Math.floor(Math.random()*DATA.length)];
+      ribbon.appendChild(sp);
+    }
+    document.body.appendChild(ribbon);
+  });
+})();
 </script>
 </body>
 </html>
