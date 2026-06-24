@@ -543,7 +543,7 @@ textarea {
     <button onclick="setAction('inspect_case')" class="ex-pill">inspect_case</button>
     <button onclick="setAction('search_policy',{query:'deletion retention'})" class="ex-pill">search_policy</button>
     <button onclick="setAction('request_review',{reviewer:'legal'})" class="ex-pill">request_review</button>
-    <button onclick="setAction('open_record',{record_id:'rec_001'})" class="ex-pill">open_record</button>
+    <button onclick="setAction('open_record',{target_id:'rec_001'})" class="ex-pill">open_record</button>
     <button onclick="setAction('submit')" class="ex-pill pill-lime">submit</button>
   </div>
 </main>
@@ -572,7 +572,19 @@ const stepsTaken = document.getElementById('steps-taken');
 const stepBar    = document.getElementById('step-bar');
 const stepPct    = document.getElementById('step-pct');
 let stepCount = 0;
-const MAX_STEPS = 20; // rough estimate for progress bar
+const MAX_STEPS = 20;
+
+/* Catch uncaught JS errors and show them in the log panel */
+window.onerror = function(msg, src, line) {
+  if (output) {
+    const el = document.createElement('div');
+    el.style.cssText = 'color:#FF5E7B;margin-bottom:4px;';
+    el.textContent = '[JS ERROR] ' + msg + ' (line ' + line + ')';
+    output.appendChild(el);
+    output.scrollTop = output.scrollHeight;
+  }
+  return false;
+};
 
 /* ── HELPERS ──────────────────────────────────────────────────────────── */
 function ts() {
@@ -635,7 +647,7 @@ async function request(path, options) {
   const res = await fetch(path, options || {});
   const text = await res.text();
   let body;
-  try { body = JSON.parse(text); } catch { body = text; }
+  try { body = JSON.parse(text); } catch(e) { body = text; }
   if (!res.ok) throw new Error(typeof body === 'string' ? body : JSON.stringify(body, null, 2));
   return body;
 }
