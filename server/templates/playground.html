@@ -1108,6 +1108,7 @@ new MutationObserver(function(){
     pulses.forEach(function(p){
       p.t+=0.025;
       var fl=layers[p.layer],tl=layers[p.layer+1];
+      if(!fl||!tl)return;
       fl.forEach(function(a){tl.forEach(function(b){
         var px=a.x+(b.x-a.x)*p.t,py=a.y+(b.y-a.y)*p.t;
         ctx.fillStyle='rgba(178,247,70,'+(0.88-p.t*0.35)+')';
@@ -1129,7 +1130,11 @@ new MutationObserver(function(){
   draw();
   function fire(){
     [0,1,2].forEach(function(l){
-      setTimeout(function(){acts[l]=1;pulses.push({layer:l,t:0});setTimeout(function(){acts[l]=0;},420);},l*260);
+      setTimeout(function(){
+        acts[l]=1;
+        if(l<layers.length-1)pulses.push({layer:l,t:0});
+        setTimeout(function(){acts[l]=0;},420);
+      },l*260);
     });
   }
   var stepBtn=document.querySelector('.btn-step');
