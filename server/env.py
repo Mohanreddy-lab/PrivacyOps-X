@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 import json
+import random as _random
 from copy import deepcopy
 from typing import Any
 from uuid import uuid4
+
+_PERSONA_POOL: list[tuple[str, str]] = [
+    ("Alex Chen", "alex.chen"),
+    ("Jordan Walsh", "j.walsh"),
+    ("Sam Rivera", "s.rivera"),
+    ("Morgan Kim", "m.kim"),
+    ("Taylor Nguyen", "t.nguyen"),
+    ("Casey Patel", "c.patel"),
+    ("Riley Okafor", "r.okafor"),
+    ("Quinn Larsen", "q.larsen"),
+]
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import EnvironmentMetadata
@@ -47,6 +59,7 @@ from .engines import (
     latest_findings_by_reviewer,
     resolve_requester_reply,
     reviewers_used,
+    run_adversarial_review,
     run_audit_review,
     run_compliance_review,
     run_legal_review,
@@ -238,13 +251,22 @@ class PrivacyOpsXEnvironment(
     def _step_limit(self) -> int:
         return int(self._task()["step_limit"])
 
+    def _persona_for_seed(self) -> tuple[str, str]:
+        seed = self._state.seed if self._state.seed is not None else 0
+        rng = _random.Random(seed ^ 0xDEAD)
+        name, handle = rng.choice(_PERSONA_POOL)
+        domain = self._variant().get("requester_email", "example.com").split("@")[-1]
+        return name, f"{handle}@{domain}"
+
     def _ticket_summary(self) -> str:
         variant = self._variant()
         subject = variant["subject"]
+        _, persona_email = self._persona_for_seed()
+        base_email = variant["requester_email"]
         if self._state.case_inspected:
             return (
                 f"Subject: {subject}\n"
-                f"From: {variant['requester_email']}\n"
+                f"From: {base_email} (alias contact: {persona_email})\n"
                 f"Body: {variant['request_text']}\n"
                 f"Attachment excerpt: {variant['attachment_excerpt']}"
             )
@@ -427,6 +449,8 @@ class PrivacyOpsXEnvironment(
             sla_deadline=self._state.sla_deadline,
             urgency_level=self._state.urgency_level,
             user_reaction_preview=self._state.user_reaction,
+            quarantined_record_ids=list(self._state.quarantined_record_ids),
+            dpa_escalated=self._state.dpa_escalated,
             done=self._state.done,
             reward=reward,
             metadata={"info": self._build_info(error, info_error)},
@@ -725,6 +749,7 @@ class PrivacyOpsXEnvironment(
 
         self._state.step_count += 1
         self._apply_temporal_triggers()
+        self._apply_adaptive_pressure()
         previous_risk = self._state.risk_score
         previous_partial = self._last_partial_score
         previous_note_text = "\n".join(self._state.note_history)
@@ -1185,6 +1210,166 @@ class PrivacyOpsXEnvironment(
             "warning": "Self-review repeated without any new signal." if redundant else None,
             "error": None,
             "payload": {},
+        }
+
+    def _apply_adaptive_pressure(self) -> None:
+        step = self._state.step_count
+        limit = self._step_limit()
+        if limit == 0:
+            return
+        half = limit // 2
+        three_quarters = (limit * 3) // 4
+        if step == half:
+            partial = compute_partial_score(self._state, self._task())
+            if partial < 0.40:
+                self._state.urgency_level = "high"
+                self._append_stakeholder_message(
+                    sender="system",
+                    message=(
+                        f"Halfway through the step budget ({step}/{limit}) with partial score "
+                        f"{partial:.2f}. Case is at risk — prioritise workspace accuracy and "
+                        "evidence collection immediately."
+                    ),
+                    severity="warn",
+                )
+        elif step == three_quarters:
+            partial = compute_partial_score(self._state, self._task())
+            if partial < 0.65:
+                self._state.urgency_level = "high"
+                self._state.risk_score = min(1.0, self._state.risk_score + 0.05)
+                self._append_stakeholder_message(
+                    sender="system",
+                    message=(
+                        f"Three-quarters through the step budget ({step}/{limit}). "
+                        "Critical fields are still unresolved. Risk score elevated. "
+                        "Complete remaining evidence collection and set all workspace fields now."
+                    ),
+                    severity="fail",
+                )
+
+    def _handle_flag_prompt_injection(self, action: PrivacyOpsAction) -> dict[str, Any]:
+        del action
+        task = self._task()
+        has_injection = bool(task.get("adversarial_traps") or task.get("forbidden_reply_keywords"))
+        already_flagged = "prompt_injection_flagged_explicitly" in self._state.explanation_tags
+        if not already_flagged:
+            append_trace_tag(self._state, "prompt_injection_flagged_explicitly")
+            self._state.audit_log.append("prompt_injection_explicitly_documented")
+        return {
+            "action_valid": has_injection,
+            "redundant": already_flagged,
+            "done": False,
+            "submitted": False,
+            "last_action_result": (
+                "Prompt injection documented in audit log. This instruction will not influence the case decision."
+                if has_injection
+                else "No active injection attempt found in current case context."
+            ),
+            "warning": None,
+            "error": None,
+            "payload": {},
+            "event_flags": {"correct_compliance_review": True} if has_injection and not already_flagged else {},
+        }
+
+    def _handle_quarantine_record(self, action: PrivacyOpsAction) -> dict[str, Any]:
+        if not action.target_id:
+            _, obs = self._invalid_runtime_action(
+                "quarantine_record_missing_target",
+                "target_id is required for quarantine_record.",
+            )
+            return obs
+        target = action.target_id
+        redundant = target in self._state.quarantined_record_ids
+        if not redundant:
+            self._state.quarantined_record_ids.append(target)
+            append_trace_tag(self._state, "record_quarantined")
+            self._append_stakeholder_message(
+                sender="audit",
+                message=(
+                    f"Record '{target}' quarantined pending investigation. "
+                    "No data from this source will be processed until cleared by audit."
+                ),
+                severity="warn",
+            )
+        return {
+            "action_valid": True,
+            "redundant": redundant,
+            "done": False,
+            "submitted": False,
+            "last_action_result": (
+                f"Record '{target}' quarantined successfully."
+                if not redundant
+                else f"Record '{target}' is already quarantined."
+            ),
+            "warning": None,
+            "error": None,
+            "payload": {"quarantined_record_ids": list(self._state.quarantined_record_ids)},
+        }
+
+    def _handle_escalate_to_dpa(self, action: PrivacyOpsAction) -> dict[str, Any]:
+        del action
+        if self._state.workspace.jurisdiction != "gdpr":
+            _, obs = self._invalid_runtime_action(
+                "dpa_escalation_invalid_jurisdiction",
+                "DPA escalation is only valid for cases with GDPR jurisdiction.",
+            )
+            return obs
+        redundant = self._state.dpa_escalated
+        if not redundant:
+            self._state.dpa_escalated = True
+            append_trace_tag(self._state, "dpa_escalation_triggered")
+            self._append_stakeholder_message(
+                sender="legal",
+                message=(
+                    "Formal escalation to the Data Protection Authority initiated. "
+                    "A 72-hour regulatory response clock is now active. "
+                    "Ensure the case is routed to privacy_legal and all documentation is in order."
+                ),
+                severity="warn",
+            )
+        return {
+            "action_valid": not redundant,
+            "redundant": redundant,
+            "done": False,
+            "submitted": False,
+            "last_action_result": (
+                "DPA escalation initiated — 72-hour response window started."
+                if not redundant
+                else "DPA escalation already in progress."
+            ),
+            "warning": None,
+            "error": None,
+            "payload": {},
+            "event_flags": {"correct_legal_review": True} if not redundant else {},
+        }
+
+    def _handle_adversarial_review(self, action: PrivacyOpsAction) -> dict[str, Any]:
+        del action
+        if not self._state.case_inspected:
+            _, obs = self._invalid_runtime_action(
+                "adversarial_review_too_early",
+                "Inspect the case before requesting adversarial review.",
+            )
+            return obs
+        challenges = run_adversarial_review(self._state, self._task())
+        self._state.adversarial_challenges_issued += 1
+        for challenge in challenges:
+            self._append_stakeholder_message(sender="critic", message=challenge, severity="warn")
+        redundant = self._state.adversarial_challenges_issued > 3
+        if not redundant:
+            append_trace_tag(self._state, "adversarial_challenge_accepted")
+        return {
+            "action_valid": True,
+            "redundant": redundant,
+            "done": False,
+            "submitted": False,
+            "last_action_result": (
+                f"Adversarial reviewer raised {len(challenges)} challenge(s). "
+                "Address each before submission."
+            ),
+            "warning": None,
+            "error": None,
+            "payload": {"challenges": challenges},
         }
 
     def _handle_submit(self, action: PrivacyOpsAction) -> dict[str, Any]:

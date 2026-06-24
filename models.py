@@ -187,6 +187,10 @@ class PrivacyOpsAction(Action):
         "request_review",
         "self_review",
         "submit",
+        "flag_prompt_injection",
+        "quarantine_record",
+        "escalate_to_dpa",
+        "adversarial_review",
     ]
     target_id: str | None = None
     field_name: WorkspaceFieldName | None = None
@@ -272,6 +276,8 @@ class PrivacyOpsObservation(Observation):
     risk_score: float = Field(ge=0.0, le=1.0)
     steps_remaining: int = Field(ge=0)
     sla_deadline: int = Field(ge=0)
+    quarantined_record_ids: list[str] = Field(default_factory=list)
+    dpa_escalated: bool = False
     urgency_level: Literal["low", "medium", "high"] = "low"
     user_reaction_preview: Literal[
         "unknown",
@@ -313,6 +319,9 @@ class PrivacyOpsState(State):
     invalid_action_count: int = 0
     redundant_action_count: int = 0
     failure_modes: FailureModes = Field(default_factory=FailureModes)
+    quarantined_record_ids: list[str] = Field(default_factory=list)
+    dpa_escalated: bool = False
+    adversarial_challenges_issued: int = 0
     submitted: bool = False
     done: bool = False
     user_reaction: Literal["unknown", "satisfied", "confused", "escalated"] = (
