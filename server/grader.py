@@ -220,6 +220,17 @@ def grade_episode(state: PrivacyOpsState, task: dict[str, Any]) -> BenchmarkBrea
     confidence_calibration = _confidence_calibration(expected, state)
     sla_timeliness = 1.0 if state.step_count <= state.sla_window_steps else 0.0
 
+    if task.get("constitutional_deadlock"):
+        deadlock_confirmed = float("constitutional_deadlock_confirmed" in state.explanation_tags)
+        coppa_conflict = float("coppa_estate_conflict_detected" in state.explanation_tags)
+        correct_escalation = float(
+            state.workspace.case_status == "escalated"
+            and state.workspace.routing_queue == "privacy_legal"
+        )
+        deadlock_recognition = (deadlock_confirmed + coppa_conflict + correct_escalation) / 3.0
+    else:
+        deadlock_recognition = 1.0
+
     final_score = round(
         _strict_public_score(
             0.22 * compliance_accuracy
@@ -246,5 +257,6 @@ def grade_episode(state: PrivacyOpsState, task: dict[str, Any]) -> BenchmarkBrea
         evidence_coverage=round(evidence_coverage, 4),
         interaction_quality=round(interaction_quality, 4),
         confidence_calibration=round(confidence_calibration, 4),
+        deadlock_recognition=round(deadlock_recognition, 4),
         final_score=final_score,
     )

@@ -34,6 +34,11 @@ TRACE_MESSAGES = {
     "requester_acknowledges_billing_retention": "Requester acknowledged that billing-retention rules may preserve some records.",
     "guardian_docs_offered": "Requester offered guardianship evidence for the minor account.",
     "guardian_accepts_partial_action": "Requester accepted partial action while legal and fraud constraints remain active.",
+    "constitutional_deadlock_confirmed": "Opening both the GDPR deletion mandate and SEC retention records together confirmed the constitutional deadlock — both obligations are binding and directly contradictory.",
+    "coppa_estate_conflict_detected": "COPPA-protected minor data combined with an estate executor claim creates an irresolvable conflict — COPPA consent cannot be posthumously reassigned.",
+    "reviewer_conflict_detected": "Compliance and legal reviewers have reached conflicting conclusions — audit review is required to break the deadlock.",
+    "gdpr_authority_complaint_revealed": "EU Data Protection Authority complaint filed — 30-day regulatory clock is now externally tracked.",
+    "sec_confirmation_revealed": "SEC formally confirmed seven-year retention obligation extends to this account cluster.",
 }
 
 

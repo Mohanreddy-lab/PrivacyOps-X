@@ -62,7 +62,15 @@ from .grader import compute_partial_score, grade_episode
 from .reporting import build_improvement_lessons, build_milestones, build_theme_alignment
 
 
-RISK_BY_DIFFICULTY = {"easy": 0.20, "medium": 0.30, "hard": 0.40}
+RISK_BY_DIFFICULTY = {
+    "easy": 0.20,
+    "medium": 0.30,
+    "hard": 0.40,
+    "fable": 0.55,
+    "mythos": 0.70,
+    "god": 0.85,
+    "irreducible": 0.95,
+}
 SLA_DAYS_BY_JURISDICTION = {"gdpr": 30, "cpra": 45, "coppa": 30, "other": 30, "unknown": 30}
 SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
@@ -518,7 +526,7 @@ class PrivacyOpsXEnvironment(
             append_trace_tag(self._state, "verification_mismatch_detected")
         if (
             self._state.workspace.verification_status == "verification_required"
-            and task["task_id"] == "hard_guardian_minor_legal_hold_fraud"
+            and self._variant().get("identity_signal") == "guardian_claim"
         ):
             append_trace_tag(self._state, "guardian_verification_required")
         if self._state.workspace.retention_decision == "retain_billing":
@@ -716,6 +724,7 @@ class PrivacyOpsXEnvironment(
             return obs
 
         self._state.step_count += 1
+        self._apply_temporal_triggers()
         previous_risk = self._state.risk_score
         previous_partial = self._last_partial_score
         previous_note_text = "\n".join(self._state.note_history)
@@ -802,6 +811,52 @@ class PrivacyOpsXEnvironment(
             error=result.get("error"),
         )
 
+    def _apply_cross_record_effects(self) -> None:
+        viewed = set(self._state.viewed_record_ids)
+        for effect in self._task().get("cross_record_effects", []):
+            if set(effect["trigger_records"]).issubset(viewed):
+                tag = effect["effect_tag"]
+                if tag not in self._state.explanation_tags:
+                    append_trace_tag(self._state, tag)
+                    if effect.get("effect_note"):
+                        self._append_stakeholder_message(
+                            sender="system",
+                            message=effect["effect_note"],
+                            severity="warn",
+                        )
+
+    def _apply_temporal_triggers(self) -> None:
+        for trigger in self._task().get("temporal_triggers", []):
+            if self._state.step_count == trigger["at_step"]:
+                fact = trigger.get("revealed_fact", "")
+                if fact and fact not in self._state.revealed_requester_facts:
+                    self._state.revealed_requester_facts.append(fact)
+                    append_trace_tag(self._state, fact)
+                self._append_stakeholder_message(
+                    sender="system",
+                    message=trigger["message"],
+                    severity=trigger.get("severity", "info"),
+                )
+
+    def _check_reviewer_conflict(self) -> None:
+        compliance = latest_findings_by_reviewer(self._state, "compliance")
+        legal = latest_findings_by_reviewer(self._state, "legal")
+        if not compliance or not legal:
+            return
+        compliance_fail = any(f.severity == "fail" for f in compliance)
+        legal_fail = any(f.severity == "fail" for f in legal)
+        if compliance_fail != legal_fail:
+            if "reviewer_conflict_detected" not in self._state.explanation_tags:
+                append_trace_tag(self._state, "reviewer_conflict_detected")
+                self._append_stakeholder_message(
+                    sender="audit",
+                    message=(
+                        "Compliance and legal reviewers have reached conflicting conclusions. "
+                        "Request an audit review to resolve the disagreement before submission."
+                    ),
+                    severity="warn",
+                )
+
     def _handle_inspect_case(self, action: PrivacyOpsAction) -> dict[str, Any]:
         del action
         redundant = self._state.case_inspected
@@ -851,6 +906,7 @@ class PrivacyOpsXEnvironment(
             append_trace_tag(self._state, "fraud_investigation_detected")
         if "minor_account" in record.get("flags", []):
             append_trace_tag(self._state, "guardian_verification_required")
+        self._apply_cross_record_effects()
         return {
             "action_valid": True,
             "redundant": redundant,
@@ -1077,6 +1133,7 @@ class PrivacyOpsXEnvironment(
         else:
             findings = run_audit_review(self._state, self._task())
         self._state.review_history.extend(findings)
+        self._check_reviewer_conflict()
         for finding in findings:
             self._append_stakeholder_message(
                 sender=action.reviewer,

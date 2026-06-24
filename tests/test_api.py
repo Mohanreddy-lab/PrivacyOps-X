@@ -76,10 +76,10 @@ def test_judge_report_and_curriculum_endpoints_respond() -> None:
     curriculum_body = curriculum_response.json()
     assert judge_body["env_name"] == "PrivacyOps-X"
     assert "self-improving agent systems" in judge_body["themes"]
-    assert len(judge_body["task_cards"]) == 4
+    assert len(judge_body["task_cards"]) == 8
     assert "TRAINING.md" in judge_body["training_assets"]
     assert curriculum_body["env_name"] == "PrivacyOps-X"
-    assert len(curriculum_body["tracks"]) == 4
+    assert len(curriculum_body["tracks"]) == 8
 
 
 def test_dashboard_uses_fallback_content_when_artifacts_are_missing(monkeypatch) -> None:

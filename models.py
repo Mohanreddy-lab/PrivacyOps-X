@@ -170,6 +170,7 @@ class BenchmarkBreakdown(BaseModel):
     evidence_coverage: float = Field(ge=0.0, le=1.0)
     interaction_quality: float = Field(ge=0.0, le=1.0)
     confidence_calibration: float = Field(ge=0.0, le=1.0)
+    deadlock_recognition: float = Field(default=1.0, ge=0.0, le=1.0)
     final_score: float = Field(ge=0.0, le=1.0)
 
 
@@ -249,7 +250,7 @@ class PrivacyOpsAction(Action):
 
 class PrivacyOpsObservation(Observation):
     task_id: str
-    difficulty: Literal["easy", "medium", "hard"]
+    difficulty: Literal["easy", "medium", "hard", "fable", "mythos", "god", "irreducible"]
     ticket_id: str
     ticket_summary: str
     workspace: WorkspaceView
@@ -282,7 +283,7 @@ class PrivacyOpsObservation(Observation):
 
 class PrivacyOpsState(State):
     task_id: str
-    difficulty: Literal["easy", "medium", "hard"]
+    difficulty: Literal["easy", "medium", "hard", "fable", "mythos", "god", "irreducible"]
     seed: int | None = None
     variant_id: str
     case_inspected: bool = False

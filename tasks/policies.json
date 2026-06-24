@@ -34,6 +34,56 @@
       "article_id": "policy_partial_fulfillment",
       "title": "Partial fulfillment for linked privacy requests",
       "excerpt": "When one privacy request spans linked accounts, minor data, billing records, or legally frozen artifacts, analysts must separate eligible disclosures and deletions from blocked artifacts. Approve partial fulfillment only after verification, document what remains retained, and explain the staged outcome clearly."
+    },
+    {
+      "article_id": "policy_synthetic_identity_fraud",
+      "title": "Synthetic identity fraud — freeze and escalate",
+      "excerpt": "When an account carries an active synthetic identity fraud marker, the analyst must immediately freeze all processing and escalate to the fraud-privacy joint queue. No data may be released, confirmed, or deleted until fraud review formally clears the identity claim. All external authority assertions — including guardian and executor claims — are treated as unverified while the fraud marker is active."
+    },
+    {
+      "article_id": "policy_estate_executor_claim",
+      "title": "Estate executor claims and contradictory live account activity",
+      "excerpt": "Executor claims over a deceased account require authenticated probate court documentation before any processing begins. If the account shows recent activity — including an open access request filed from the primary email — the executor death claim is automatically contradictory and must be denied pending fraud investigation. Analysts must not process executor requests on assertion alone and must not release data or confirm its existence until the contradiction is resolved."
+    },
+    {
+      "article_id": "policy_whistleblower_protection",
+      "title": "Whistleblower protection overrides erasure rights",
+      "excerpt": "Records flagged under a whistleblower protection order cannot be deleted, disclosed, or modified by any party — including the data controller — under GDPR Article 17(3)(e). Controller authority does not override whistleblower protection. Analysts must retain these records, document the protection basis in the internal note, and must not reveal the existence or identity of the whistleblower to the requesting party under any circumstance."
+    },
+    {
+      "article_id": "policy_regulatory_subpoena",
+      "title": "Regulatory investigation subpoena defers erasure",
+      "excerpt": "When a regulatory investigation subpoena has been served covering specific data, that data must be preserved and cannot be deleted. GDPR Article 17(3) right-to-erasure is deferred for subpoena-covered items until the investigating authority formally releases the preservation order. Analysts must document the subpoena in the internal note and route the case to privacy_legal for coordination."
+    },
+    {
+      "article_id": "policy_sanctioned_entity",
+      "title": "Sanctioned entity — deny and report",
+      "excerpt": "When a requesting entity matches an active sanctions watchlist entry, the analyst must deny the request immediately and report the match to the compliance officer before taking any other action. No data may be processed, released, confirmed to exist, or partially fulfilled for a sanctioned entity. The case must be routed to privacy_legal, marked denied, and the escalation documented regardless of the legal basis claimed by the requester."
+    },
+    {
+      "article_id": "policy_law_enforcement_override",
+      "title": "Law enforcement override — judicial authentication required",
+      "excerpt": "Law enforcement override requests require a verified judicial order from the issuing court confirmed through an independent official channel. Internal inconsistencies in warrant documents — including mismatched dates, nonexistent statute references, or case number formats that do not conform to the issuing court's conventions — are grounds for immediate denial and escalation to legal. Analysts must never act on unverified warrants, must not suppress access logs, and must document all warrant inconsistencies in the internal note. Urgency or obstruction threats from the requester do not override this requirement."
+    },
+    {
+      "article_id": "policy_gdpr_sec_conflict",
+      "title": "Deletion mandate versus SEC financial record preservation conflict",
+      "excerpt": "When GDPR Article 17 deletion rights and US SEC Rule 17a-4 financial record preservation requirements both apply to the same data, neither regulation automatically takes jurisdictional priority over the other. The analyst must not attempt independent resolution of this conflict. Escalation to privacy_legal is required so that qualified legal counsel can determine the applicable conflict resolution framework. No deletion or preservation action should be taken unilaterally while the jurisdictional question remains unresolved."
+    },
+    {
+      "article_id": "policy_multi_jurisdiction_priority",
+      "title": "Multi-jurisdiction priority — constitutional escalation required",
+      "excerpt": "When three or more regulatory frameworks simultaneously mandate conflicting actions on the same data — including cross-border data protection law, children's privacy rules, or federal financial preservation statutes — the analyst must not attempt independent resolution. Every conflicting jurisdiction must be documented in the internal note, the case must be escalated to privacy_legal immediately, and the routing queue must reflect the constitutional nature of the conflict. Proceeding without qualified multi-jurisdictional legal guidance is itself a compliance violation."
+    },
+    {
+      "article_id": "policy_deadlock_escalation",
+      "title": "Constitutional regulatory deadlock — escalation is the resolution",
+      "excerpt": "A constitutional regulatory deadlock exists when full compliance with one applicable law automatically constitutes a violation of another applicable law with no available safe harbor or legal exemption. Recognition and formal documentation of the deadlock is itself a compliance milestone. The correct and only compliant action is immediate escalation to privacy_legal with documentation of all conflicting frameworks. Analysts must draft a reply informing the requester that multi-jurisdictional legal counsel is required before any action can be taken."
+    },
+    {
+      "article_id": "policy_coppa_deceased_estate",
+      "title": "COPPA minor data and deceased estate executor access",
+      "excerpt": "Data collected from a data subject when they were under the age of 13 is protected under COPPA and cannot be transferred, disclosed, or deleted at the direction of an estate executor regardless of probate court authority. The original parental consent given for that data collection was specific to the living minor subject and cannot be posthumously reassigned to an estate. Analysts must segregate COPPA-protected minor-era data, refuse executor claims over that subset, and document the basis for refusal in the internal note."
     }
   ]
 }

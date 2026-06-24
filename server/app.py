@@ -50,7 +50,7 @@ AUTH_RATE_LIMIT_MAX_REQUESTS = 5
 RATE_LIMIT_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
 FRAME_ANCESTORS_POLICY = "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co https://*.hf.space"
 DASHBOARD_FALLBACK_SCORES = {
-    "random_score": 0.3594,
+    "random_score": 0.3695,
     "teacher_score": 0.99,
     "baseline_score": 0.6087,
     "improved_score": 0.9519,
@@ -1732,6 +1732,10 @@ def judge_report() -> JudgeReportResponse:
         "easy": ["multi-agent interactions", "world modeling"],
         "medium": ["long-horizon planning", "world modeling", "self-improvement"],
         "hard": ["multi-agent interactions", "long-horizon planning", "world modeling"],
+        "fable": ["multi-agent interactions", "world modeling", "self-improvement"],
+        "mythos": ["long-horizon planning", "world modeling", "self-improvement"],
+        "god": ["multi-agent interactions", "long-horizon planning", "world modeling", "self-improvement"],
+        "irreducible": ["multi-agent interactions", "long-horizon planning", "world modeling", "self-improvement"],
     }
     task_cards = [
         TaskCardResponse(
@@ -1739,7 +1743,7 @@ def judge_report() -> JudgeReportResponse:
             difficulty=task["difficulty"],
             required_reviewers=task["required_reviewers"],
             required_requester_facts=task.get("required_requester_facts", []),
-            theme_focus=focus_map[task["difficulty"]],
+            theme_focus=focus_map.get(task["difficulty"], ["world modeling"]),
         )
         for task in tasks.values()
     ]
