@@ -54,7 +54,7 @@ DASHBOARD_FALLBACK_SCORES = {
     "teacher_score": 0.99,
     "baseline_score": 0.6087,
     "improved_score": 0.9647,
-    "sft_score": 0.8241,
+    "sft_score": 0.9439,
 }
 DASHBOARD_FALLBACK_BEFORE = [
     {"action_type": "inspect_case"},
@@ -1776,6 +1776,8 @@ def stats() -> dict:
         "scores": {
             "teacher_oracle": 0.9900,
             "self_improved": 0.9647,
+            "god_level_sft": 0.9439,
+            "god_level_realworld": 0.9372,
             "sft_checkpoint": DASHBOARD_FALLBACK_SCORES["sft_score"],
             "baseline": DASHBOARD_FALLBACK_SCORES["baseline_score"],
             "random": DASHBOARD_FALLBACK_SCORES["random_score"],

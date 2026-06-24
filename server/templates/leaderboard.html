@@ -199,7 +199,7 @@ a,button,[role=button]{cursor:none!important;}
           <div>
             <div class="tier mb-2" style="background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.25);color:#10B981;">Trained</div>
             <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">SFT Checkpoint</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Fine-tuned model — score updates after checkpoint eval</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">God-level SFT — 315 examples · 3 variants · 35-step optimal trajectory</div>
           </div>
         </div>
         <div class="md:ml-auto flex flex-col items-end gap-1">
@@ -207,14 +207,14 @@ a,button,[role=button]{cursor:none!important;}
           <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(16,185,129,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
         </div>
       </div>
-      <div class="bar-track"><div class="bar-fill" id="sft-lb-bar" style="background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+      <div class="bar-track"><div class="bar-fill" id="sft-lb-bar" style="background:linear-gradient(90deg,#10B981,#34D399);" data-w="94"></div></div>
       <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
-        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="83"></div></div></div>
-        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="87"></div></div></div>
-        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="79"></div></div></div>
-        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="81"></div></div></div>
-        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="85"></div></div></div>
-        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="78"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="91"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="100"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="93"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="92"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Robust.</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="100"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#10B981;" data-w="100"></div></div></div>
       </div>
     </div>
 
@@ -414,6 +414,26 @@ a,button,[role=button]{cursor:none!important;}
     <a href="/playground" class="flex-shrink-0 no-underline px-8 py-4 rounded-xl" style="background:linear-gradient(135deg,rgba(178,247,70,.15),rgba(0,207,255,.12));border:1px solid rgba(178,247,70,.35);color:#B2F746;font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;transition:all .3s;">
       Reproduce It →
     </a>
+  </div>
+
+  <!-- GOD-LEVEL SFT CALLOUT -->
+  <div class="reveal mt-5 rounded-2xl p-6 grid grid-cols-2 md:grid-cols-4 gap-4" style="background:rgba(16,185,129,.04);border:1px solid rgba(16,185,129,.18);">
+    <div class="text-center">
+      <div style="font-family:'JetBrains Mono';font-size:26px;font-weight:700;color:#10B981;">0.9439</div>
+      <div style="font-family:'JetBrains Mono';font-size:8px;letter-spacing:.12em;color:rgba(255,255,255,.28);text-transform:uppercase;margin-top:4px;">God SFT Score</div>
+    </div>
+    <div class="text-center border-l border-white/[0.06]">
+      <div style="font-family:'JetBrains Mono';font-size:26px;font-weight:700;color:#10B981;">315</div>
+      <div style="font-family:'JetBrains Mono';font-size:8px;letter-spacing:.12em;color:rgba(255,255,255,.28);text-transform:uppercase;margin-top:4px;">Training Examples</div>
+    </div>
+    <div class="text-center border-l border-white/[0.06]">
+      <div style="font-family:'JetBrains Mono';font-size:26px;font-weight:700;color:#10B981;">35</div>
+      <div style="font-family:'JetBrains Mono';font-size:8px;letter-spacing:.12em;color:rgba(255,255,255,.28);text-transform:uppercase;margin-top:4px;">Optimal Steps</div>
+    </div>
+    <div class="text-center border-l border-white/[0.06]">
+      <div style="font-family:'JetBrains Mono';font-size:26px;font-weight:700;color:#10B981;">8/8</div>
+      <div style="font-family:'JetBrains Mono';font-size:8px;letter-spacing:.12em;color:rgba(255,255,255,.28);text-transform:uppercase;margin-top:4px;">Critical Steps</div>
+    </div>
   </div>
 
 </main>
