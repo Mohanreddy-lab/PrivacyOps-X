@@ -376,6 +376,69 @@ setTimeout(function(){document.querySelectorAll('.reveal').forEach(function(el){
     }
   });
 })();
+
+/* ── HYPERSPACE WARP ON LOAD ─────────────────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:999999;pointer-events:none;';
+  document.body.prepend(cv);
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  var ctx=cv.getContext('2d'),CX=cv.width/2,CY=cv.height/2,N=220,stars=[];
+  for(var i=0;i<N;i++){var a=Math.random()*Math.PI*2;stars.push({a:a,r:Math.random()*10+2,spd:1.4+Math.random()*3.2,hue:Math.floor(Math.random()*360)});}
+  var start=performance.now(),DUR=860;
+  (function frame(now){
+    var t=Math.min((now-start)/DUR,1),ease=1-Math.pow(1-t,3);
+    ctx.fillStyle='rgba(3,8,16,'+(0.82-ease*0.38)+')';ctx.fillRect(0,0,cv.width,cv.height);
+    for(var i=0;i<stars.length;i++){
+      var s=stars[i];s.r+=s.spd*(1+ease*9);
+      var trail=Math.min(s.r*0.65,120),x1=CX+Math.cos(s.a)*(s.r-trail),y1=CY+Math.sin(s.a)*(s.r-trail),x2=CX+Math.cos(s.a)*s.r,y2=CY+Math.sin(s.a)*s.r;
+      var alpha=Math.min(1,s.r/55)*(1-ease*0.48);
+      var g=ctx.createLinearGradient(x1,y1,x2,y2);
+      g.addColorStop(0,'rgba(0,207,255,0)');g.addColorStop(1,'hsla('+((s.hue+ease*120)%360)+',100%,78%,'+alpha+')');
+      ctx.strokeStyle=g;ctx.lineWidth=0.8+ease*1.8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    }
+    if(t<1)requestAnimationFrame(frame);
+    else{cv.style.transition='opacity 0.4s ease';cv.style.opacity='0';setTimeout(function(){cv.remove();},500);}
+  })(start);
+})();
+
+/* ── 3D PARALLAX TILT ────────────────────────────────────────────── */
+(function(){
+  document.querySelectorAll('.rank-card').forEach(function(card){
+    var MAXR=11;
+    card.style.transformStyle='preserve-3d';
+    card.style.willChange='transform';
+    card.querySelectorAll('.score-val,.tier,.w-14').forEach(function(el){
+      el.style.transform='translateZ(22px)';el.style.transition='transform .12s ease-out';
+    });
+    card.querySelectorAll('.rank-num').forEach(function(el){el.style.transform='translateZ(-10px)';});
+    card.addEventListener('mousemove',function(e){
+      var r=card.getBoundingClientRect();
+      var rx=((e.clientY-r.top-r.height/2)/r.height)*MAXR;
+      var ry=-((e.clientX-r.left-r.width/2)/r.width)*MAXR;
+      card.style.transform='perspective(900px) rotateX('+rx+'deg) rotateY('+ry+'deg) scale3d(1.022,1.022,1.022)';
+    });
+    card.addEventListener('mouseleave',function(){
+      card.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)';
+    });
+  });
+})();
+
+/* ── HOLOGRAPHIC FOIL SHIMMER (#1 card) ──────────────────────────── */
+(function(){
+  var card=document.querySelector('.rank-1-glow');if(!card)return;
+  var foil=document.createElement('div');
+  foil.style.cssText='position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;opacity:0;transition:opacity .25s;mix-blend-mode:screen;';
+  card.appendChild(foil);
+  card.addEventListener('mousemove',function(e){
+    var r=card.getBoundingClientRect();
+    var px=((e.clientX-r.left)/r.width)*100,py=((e.clientY-r.top)/r.height)*100;
+    var hue=(px*3.6)%360;
+    foil.style.background='radial-gradient(ellipse at '+px+'% '+py+'%,hsla('+hue+',100%,72%,0.22) 0%,hsla('+((hue+70)%360)+',100%,62%,0.11) 45%,transparent 72%)';
+    foil.style.opacity='1';
+  });
+  card.addEventListener('mouseleave',function(){foil.style.opacity='0';});
+})();
 </script>
 </body>
 </html>
