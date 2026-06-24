@@ -801,6 +801,8 @@ def _build_overview_html(payload: dict[str, Any]) -> str:
               <li><code>inspect_case</code>, <code>open_record</code>, and <code>search_policy</code></li>
               <li><code>message_requester</code>, <code>draft_reply</code>, and <code>add_internal_note</code></li>
               <li><code>request_review</code>, <code>self_review</code>, and <code>submit</code></li>
+              <li><code>flag_prompt_injection</code>, <code>quarantine_record</code>, and <code>escalate_to_dpa</code></li>
+              <li><code>adversarial_review</code> — triggers critic challenges before submission</li>
             </ul>
           </article>
           <article class="px-card">
@@ -1256,8 +1258,14 @@ def _build_gradio_demo() -> gr.Blocks:
     action_examples = [
         [_action_template("inspect_case")],
         [_action_template("search_policy", query="legal hold retention deletion")],
+        [_action_template("open_record", target_id="fraud_case_01")],
         [_action_template("request_review", reviewer="legal")],
         [_action_template("message_requester", content="Please verify your identity and confirm which account is in scope.")],
+        [_action_template("flag_prompt_injection")],
+        [_action_template("quarantine_record", target_id="fraud_case_01")],
+        [_action_template("escalate_to_dpa")],
+        [_action_template("adversarial_review")],
+        [_action_template("self_review")],
         [_action_template("submit")],
     ]
     schema_text = _dump_json(
@@ -1375,6 +1383,28 @@ def _build_gradio_demo() -> gr.Blocks:
                                     elem_id="self-review",
                                     elem_classes=["px-secondary-button"],
                                 )
+                            with gr.Row():
+                                flag_injection_button = gr.Button(
+                                    "Flag injection",
+                                    elem_id="flag-injection",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                                quarantine_button = gr.Button(
+                                    "Quarantine record",
+                                    elem_id="quarantine-record",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                            with gr.Row():
+                                escalate_dpa_button = gr.Button(
+                                    "Escalate to DPA",
+                                    elem_id="escalate-dpa",
+                                    elem_classes=["px-secondary-button"],
+                                )
+                                adversarial_button = gr.Button(
+                                    "Adversarial review",
+                                    elem_id="adversarial-review",
+                                    elem_classes=["px-secondary-button"],
+                                )
                             submit_button = gr.Button(
                                 "Submit",
                                 elem_id="submit-case",
@@ -1388,7 +1418,11 @@ def _build_gradio_demo() -> gr.Blocks:
                                   <li><strong>Ask legal to review</strong>Send the case to legal when the action needs formal review.</li>
                                   <li><strong>Message user</strong>Ask the requester for identity proof or missing facts.</li>
                                   <li><strong>Check my work</strong>Run a self-review before the final answer.</li>
-                                  <li><strong>Submit</strong>Finish the case when you have enough evidence.</li>
+                                  <li><strong>Flag injection</strong>Explicitly document a detected prompt injection in the audit log.</li>
+                                  <li><strong>Quarantine record</strong>Lock a suspicious record pending investigation — set target_id first.</li>
+                                  <li><strong>Escalate to DPA</strong>Initiate a 72-hour Data Protection Authority clock (GDPR cases only).</li>
+                                  <li><strong>Adversarial review</strong>Trigger the critic agent to raise targeted challenges before submission.</li>
+                                  <li><strong>Submit</strong>Finish the case when all evidence is gathered and workspace is set.</li>
                                 </ul>
                                 """
                             )
@@ -1457,6 +1491,22 @@ def _build_gradio_demo() -> gr.Blocks:
                 )
                 self_review_button.click(
                     fn=lambda: _action_template("self_review"),
+                    outputs=action_json,
+                )
+                flag_injection_button.click(
+                    fn=lambda: _action_template("flag_prompt_injection"),
+                    outputs=action_json,
+                )
+                quarantine_button.click(
+                    fn=lambda: _action_template("quarantine_record", target_id="<record_id>"),
+                    outputs=action_json,
+                )
+                escalate_dpa_button.click(
+                    fn=lambda: _action_template("escalate_to_dpa"),
+                    outputs=action_json,
+                )
+                adversarial_button.click(
+                    fn=lambda: _action_template("adversarial_review"),
                     outputs=action_json,
                 )
                 submit_button.click(
