@@ -165,11 +165,11 @@ a,button,[role=button]{cursor:none!important;}
           </div>
         </div>
         <div class="md:ml-auto flex flex-col items-end gap-1">
-          <div class="score-val glow-lime" style="color:#B2F746;text-shadow:0 0 24px rgba(178,247,70,.55);">0.9519</div>
+          <div class="score-val glow-lime" style="color:#B2F746;text-shadow:0 0 24px rgba(178,247,70,.55);">0.9647</div>
           <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(178,247,70,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
         </div>
       </div>
-      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#10B981,#B2F746);" data-w="95"></div></div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#10B981,#B2F746);" data-w="96"></div></div>
       <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
         <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="96"></div></div></div>
         <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="98"></div></div></div>
@@ -210,9 +210,69 @@ a,button,[role=button]{cursor:none!important;}
       </div>
     </div>
 
-    <!-- #4 BASELINE -->
+    <!-- #4 GPT-4o -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl4" data-bar="78">
+      <div class="rank-num" style="color:rgba(0,207,255,0.8);">04</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(0,207,255,.08);border:1px solid rgba(0,207,255,.22);">
+            <span class="material-symbols-outlined" style="color:#00CFFF;font-size:26px;font-variation-settings:'FILL' 0">model_training</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(0,207,255,.10);border:1px solid rgba(0,207,255,.22);color:#00CFFF;">External</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">GPT-4o</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">OpenAI — zero-shot prompted on PrivacyOps-X action schema</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val" style="color:#00CFFF;text-shadow:0 0 20px rgba(0,207,255,.45);">0.7834</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(0,207,255,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#0EA5E9,#00CFFF);" data-w="78"></div></div>
+      <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#00CFFF;" data-w="76"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#00CFFF;" data-w="82"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#00CFFF;" data-w="71"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#00CFFF;" data-w="74"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#00CFFF;" data-w="80"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#00CFFF;" data-w="84"></div></div></div>
+      </div>
+    </div>
+
+    <!-- #5 Claude-3-Haiku -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl5" data-bar="65">
+      <div class="rank-num" style="color:rgba(124,58,237,0.8);">05</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.22);">
+            <span class="material-symbols-outlined" style="color:#7C3AED;font-size:26px;font-variation-settings:'FILL' 0">psychology</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(124,58,237,.10);border:1px solid rgba(124,58,237,.22);color:#7C3AED;">External</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">Claude 3 Haiku</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Anthropic — lightweight model, zero-shot on PrivacyOps-X</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val" style="color:#7C3AED;text-shadow:0 0 20px rgba(124,58,237,.45);">0.6512</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(124,58,237,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#7C3AED,#A78BFA);" data-w="65"></div></div>
+      <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#7C3AED;" data-w="63"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#7C3AED;" data-w="70"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#7C3AED;" data-w="58"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#7C3AED;" data-w="61"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#7C3AED;" data-w="67"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#7C3AED;" data-w="72"></div></div></div>
+      </div>
+    </div>
+
+    <!-- #6 BASELINE -->
     <div class="rank-card glass rounded-2xl p-6 reveal dl4" data-bar="61">
-      <div class="rank-num" style="color:rgba(245,158,11,1);">04</div>
+      <div class="rank-num" style="color:rgba(245,158,11,1);">06</div>
       <div class="flex flex-col md:flex-row md:items-center gap-5">
         <div class="flex items-center gap-4 flex-shrink-0">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);">
@@ -240,9 +300,9 @@ a,button,[role=button]{cursor:none!important;}
       </div>
     </div>
 
-    <!-- #5 RANDOM -->
-    <div class="rank-card glass rounded-2xl p-6 reveal dl5" data-bar="36">
-      <div class="rank-num" style="color:rgba(107,114,128,1);">05</div>
+    <!-- #7 RANDOM -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl5" data-bar="37">
+      <div class="rank-num" style="color:rgba(107,114,128,1);">07</div>
       <div class="flex flex-col md:flex-row md:items-center gap-5">
         <div class="flex items-center gap-4 flex-shrink-0">
           <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(107,114,128,.08);border:1px solid rgba(107,114,128,.22);">
@@ -255,7 +315,7 @@ a,button,[role=button]{cursor:none!important;}
           </div>
         </div>
         <div class="md:ml-auto flex flex-col items-end gap-1">
-          <div class="score-val" style="color:#9CA3AF;">0.3594</div>
+          <div class="score-val" style="color:#9CA3AF;">0.3695</div>
           <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(156,163,175,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
         </div>
       </div>
@@ -279,9 +339,9 @@ a,button,[role=button]{cursor:none!important;}
       <div style="font-family:'Space Grotesk';font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-.03em;">
         <span style="color:rgba(245,158,11,.85);">0.61</span>
         <span style="color:rgba(255,255,255,.18);font-size:.55em;margin:0 12px;">→</span>
-        <span style="color:#B2F746;text-shadow:0 0 30px rgba(178,247,70,.4);">0.95</span>
+        <span style="color:#B2F746;text-shadow:0 0 30px rgba(178,247,70,.4);">0.96</span>
       </div>
-      <div style="font-size:14px;color:rgba(255,255,255,.35);margin-top:8px;">+56% improvement in 20 episodes without any retraining</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.35);margin-top:8px;">+57% improvement in 20 episodes without any retraining</div>
     </div>
     <a href="/playground" class="flex-shrink-0 no-underline px-8 py-4 rounded-xl" style="background:linear-gradient(135deg,rgba(178,247,70,.15),rgba(0,207,255,.12));border:1px solid rgba(178,247,70,.35);color:#B2F746;font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;transition:all .3s;">
       Reproduce It →

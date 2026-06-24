@@ -403,7 +403,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
         <div class="flex flex-col gap-2">
           <label style="font-family:'JetBrains Mono';font-size:9px;letter-spacing:0.14em;color:rgba(255,255,255,0.30);text-transform:uppercase;">Target Task</label>
           <div class="relative">
-            <select id="task-id" class="w-full py-3 pl-4 pr-10 rounded-xl text-[13px] appearance-none focus:outline-none transition-all cursor-pointer" style="background:rgba(0,0,0,0.55);border:1px solid rgba(0,207,255,0.18);color:rgba(0,207,255,0.85);font-family:'JetBrains Mono';">
+            <select id="task-id" onchange="updateDifficultyBadge()" class="w-full py-3 pl-4 pr-10 rounded-xl text-[13px] appearance-none focus:outline-none transition-all cursor-pointer" style="background:rgba(0,0,0,0.55);border:1px solid rgba(0,207,255,0.18);color:rgba(0,207,255,0.85);font-family:'JetBrains Mono';">
               <option value="easy_verified_access_with_injection">Easy — Verified access + injection</option>
               <option value="medium_unverified_erasure_multi_account">Medium — Multi-account erasure</option>
               <option value="hard_guardian_minor_legal_hold_fraud">Hard — Guardian + legal hold</option>
@@ -414,6 +414,10 @@ a,button,select,input,[role=button] { cursor: none !important; }
               <option value="irreducible_constitutional_deadlock">Irreducible — Constitutional deadlock</option>
             </select>
             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color:rgba(0,207,255,0.50);font-size:18px;">expand_more</span>
+          </div>
+          <div id="difficulty-badge" style="display:none;margin-top:8px;align-items:center;gap:6px;">
+            <span style="font-family:'JetBrains Mono';font-size:9px;color:rgba(255,255,255,0.28);">Difficulty:</span>
+            <span id="difficulty-val" style="font-family:'JetBrains Mono';font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:0.10em;"></span>
           </div>
         </div>
 
@@ -597,6 +601,13 @@ a,button,select,input,[role=button] { cursor: none !important; }
           <span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;">step() Send Action</span>
         </button>
 
+        <!-- Keyboard shortcut hint -->
+        <div style="font-family:'JetBrains Mono';font-size:8px;color:rgba(255,255,255,0.18);text-align:center;margin-top:4px;">
+          <kbd style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:3px;padding:1px 5px;">Ctrl+Enter</kbd> step &nbsp;·&nbsp;
+          <kbd style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:3px;padding:1px 5px;">Ctrl+R</kbd> reset &nbsp;·&nbsp;
+          <kbd style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:3px;padding:1px 5px;">Ctrl+L</kbd> clear
+        </div>
+
         <!-- Auto-Solve button -->
         <button id="auto-solve-btn" onclick="autoSolve()" class="btn-reset mt-2 w-full py-3.5 rounded-xl flex items-center justify-center gap-3" style="background:rgba(178,247,70,0.07);border:1px solid rgba(178,247,70,0.30);color:rgba(178,247,70,0.90);">
           <span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">smart_toy</span>
@@ -640,6 +651,31 @@ a,button,select,input,[role=button] { cursor: none !important; }
           </div>
         </div>
 
+        <!-- Risk Score Meter -->
+        <div class="mb-3">
+          <div class="flex justify-between mb-1.5">
+            <span style="font-family:'JetBrains Mono';font-size:8px;letter-spacing:0.12em;color:rgba(255,255,255,0.22);text-transform:uppercase;">Risk Score</span>
+            <span id="risk-val" style="font-family:'JetBrains Mono';font-size:8px;color:rgba(255,255,255,0.22);">—</span>
+          </div>
+          <div class="rounded-full overflow-hidden" style="height:4px;background:rgba(255,255,255,0.06);">
+            <div id="risk-bar" style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#10B981,#B2F746);transition:width 0.6s ease,background 0.6s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Partial Score Estimator -->
+        <div class="mb-3">
+          <div class="flex justify-between mb-1.5">
+            <span style="font-family:'JetBrains Mono';font-size:8px;letter-spacing:0.12em;color:rgba(255,255,255,0.22);text-transform:uppercase;">Est. Score</span>
+            <span id="partial-val" style="font-family:'JetBrains Mono';font-size:8px;color:rgba(178,247,70,0.50);">—</span>
+          </div>
+          <div class="rounded-full overflow-hidden" style="height:4px;background:rgba(255,255,255,0.06);">
+            <div id="partial-bar" style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#7C3AED,#B2F746);transition:width 0.8s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Milestone Tracker -->
+        <div id="milestone-list" class="flex flex-col gap-1 mb-3"></div>
+
         <div class="text-[11px]" style="font-family:'JetBrains Mono';color:rgba(255,255,255,0.22);line-height:1.6;">
           Flow: reset → inspect → records → policy → flag/quarantine/dpa → review → adversarial → submit
         </div>
@@ -652,9 +688,14 @@ a,button,select,input,[role=button] { cursor: none !important; }
             <span class="material-symbols-outlined" style="color:#00CFFF;font-size:16px;">dns</span>
             <span class="section-head">Live response</span>
           </div>
-          <button onclick="clearLog()" class="hover:text-white transition-colors" style="color:rgba(255,255,255,0.30);" title="Clear log">
-            <span class="material-symbols-outlined" style="font-size:16px;">clear_all</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="exportSession()" class="hover:text-white transition-colors" style="color:rgba(255,255,255,0.30);" title="Export session as JSON">
+              <span class="material-symbols-outlined" style="font-size:16px;">download</span>
+            </button>
+            <button onclick="clearLog()" class="hover:text-white transition-colors" style="color:rgba(255,255,255,0.30);" title="Clear log">
+              <span class="material-symbols-outlined" style="font-size:16px;">clear_all</span>
+            </button>
+          </div>
         </div>
         <div id="output" class="flex-grow p-4 overflow-y-auto rounded-b-2xl">
           <div style="color:rgba(255,255,255,0.22);font-style:italic;">Press "reset() Start Case" to begin.</div>
@@ -757,6 +798,104 @@ function clearOutput(title) {
   output.textContent = title + ' — log cleared';
 }
 
+var SESSION_LOG = [];
+
+function updateRisk(riskScore) {
+  var bar = document.getElementById('risk-bar');
+  var val = document.getElementById('risk-val');
+  if (!bar || !val || riskScore == null) return;
+  var pct = Math.round(riskScore * 100);
+  bar.style.width = pct + '%';
+  val.textContent = riskScore.toFixed(3);
+  if (riskScore < 0.35) {
+    bar.style.background = 'linear-gradient(90deg,#10B981,#B2F746)';
+    val.style.color = 'rgba(178,247,70,0.70)';
+  } else if (riskScore < 0.65) {
+    bar.style.background = 'linear-gradient(90deg,#F59E0B,#FCD34D)';
+    val.style.color = 'rgba(245,158,11,0.85)';
+  } else {
+    bar.style.background = 'linear-gradient(90deg,#EF4444,#FF5E7B)';
+    val.style.color = 'rgba(239,68,68,0.90)';
+  }
+}
+
+function updatePartialScore(body) {
+  var bar = document.getElementById('partial-bar');
+  var val = document.getElementById('partial-val');
+  if (!bar || !val) return;
+  var ps = (body.metadata && body.metadata.partial_score != null)
+    ? body.metadata.partial_score
+    : (body.observation && body.observation.risk_score != null
+        ? Math.max(0, 1 - body.observation.risk_score) : null);
+  if (ps == null) return;
+  var pct = Math.round(ps * 100);
+  bar.style.width = pct + '%';
+  val.textContent = ps.toFixed(3);
+}
+
+function updateMilestones(milestones) {
+  var list = document.getElementById('milestone-list');
+  if (!list || !milestones || !milestones.length) return;
+  list.innerHTML = '';
+  milestones.forEach(function(m) {
+    var color = m.status === 'complete' ? '#B2F746' : m.status === 'at_risk' ? '#F59E0B' : 'rgba(255,255,255,0.22)';
+    var icon = m.status === 'complete' ? 'check_circle' : m.status === 'at_risk' ? 'warning' : 'radio_button_unchecked';
+    var fill = m.status === 'complete' ? "'FILL' 1" : "'FILL' 0";
+    var el = document.createElement('div');
+    el.style.cssText = 'display:flex;align-items:center;gap:6px;padding:2px 0;';
+    el.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px;color:' + color + ';font-variation-settings:' + fill + ';">' + icon + '</span>'
+      + '<span style="font-family:\'JetBrains Mono\';font-size:9px;color:' + color + ';flex:1;">' + escHtml(m.title) + '</span>'
+      + (m.progress != null ? '<span style="font-family:\'JetBrains Mono\';font-size:8px;color:rgba(255,255,255,0.22);">' + Math.round(m.progress * 100) + '%</span>' : '');
+    list.appendChild(el);
+  });
+}
+
+function exportSession() {
+  var data = JSON.stringify(SESSION_LOG, null, 2);
+  var blob = new Blob([data], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'privacyops-x-session-' + Date.now() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log('SYS', 'Session exported as JSON', 'sys');
+}
+
+function updateDifficultyBadge() {
+  var taskId = document.getElementById('task-id').value;
+  var tier = taskId.split('_')[0];
+  var diffMap = {
+    easy:        ['EASY',        'rgba(16,185,129'],
+    medium:      ['MEDIUM',      'rgba(0,207,255'],
+    hard:        ['HARD',        'rgba(245,158,11'],
+    finale:      ['FINALE',      'rgba(239,68,68'],
+    fable:       ['FABLE',       'rgba(124,58,237'],
+    mythos:      ['MYTHOS',      'rgba(168,85,247'],
+    god:         ['GOD',         'rgba(255,94,123'],
+    irreducible: ['IRREDUCIBLE', 'rgba(139,92,246']
+  };
+  var d = diffMap[tier] || ['UNKNOWN', 'rgba(156,163,175'];
+  var badge = document.getElementById('difficulty-badge');
+  var val = document.getElementById('difficulty-val');
+  badge.style.display = 'flex';
+  val.textContent = d[0];
+  val.style.color = d[1] + ',0.90)';
+  val.style.background = d[1] + ',0.10)';
+  val.style.border = '1px solid ' + d[1] + ',0.22)';
+}
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runStep(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'r' && !e.shiftKey) { e.preventDefault(); resetEnv(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); clearLog(); }
+});
+
+/* init on load */
+(function() { updateDifficultyBadge(); })();
+
 function setStatus(text, kind) {
   statusText.textContent = text;
   if (kind === 'error') {
@@ -804,8 +943,15 @@ async function resetEnv() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({task_id: taskId, seed})
     });
+    SESSION_LOG = [{event:'reset', task_id: taskId, seed, response: body}];
     log('ENV', 'Episode started. Use inspect_case to begin.', 'env');
     logJson('RESET', body);
+    updateRisk(0);
+    updatePartialScore({});
+    updateMilestones([]);
+    var mList = document.getElementById('milestone-list');
+    if (mList) mList.innerHTML = '';
+    updateDifficultyBadge();
     setStatus('Episode ready', 'done');
     envState.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#B2F746;display:inline-block;animation:pulse 1s ease-in-out infinite;box-shadow:0 0 6px rgba(178,247,70,0.8);"></span> Active';
   } catch (err) {
@@ -832,7 +978,13 @@ async function runStep() {
     const pct = Math.min(Math.round(stepCount / MAX_STEPS * 100), 100);
     stepBar.style.width = pct + '%';
     stepPct.textContent = pct + '%';
+    SESSION_LOG.push({event:'step', action, response: body});
     logJson('STEP', body);
+    if (body.observation) {
+      updateRisk(body.observation.risk_score);
+      updateMilestones(body.observation.milestones);
+    }
+    updatePartialScore(body);
     if (body.done) {
       setStatus('Episode finished', 'done');
       envState.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block;"></span> Done';

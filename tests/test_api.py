@@ -88,7 +88,7 @@ def test_dashboard_uses_fallback_content_when_artifacts_are_missing(monkeypatch)
     response = client.get("/dashboard")
     assert response.status_code == 200
     assert "0.3695" in response.text
-    assert "0.9519" in response.text
+    assert "0.9647" in response.text
     assert "acct_eu_recovery_primary" in response.text
     assert "Random vs teacher comparison plot" in response.text
 

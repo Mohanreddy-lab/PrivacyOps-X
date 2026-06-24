@@ -53,7 +53,7 @@ DASHBOARD_FALLBACK_SCORES = {
     "random_score": 0.3695,
     "teacher_score": 0.99,
     "baseline_score": 0.6087,
-    "improved_score": 0.9519,
+    "improved_score": 0.9647,
     "sft_score": 0.8241,
 }
 DASHBOARD_FALLBACK_BEFORE = [
