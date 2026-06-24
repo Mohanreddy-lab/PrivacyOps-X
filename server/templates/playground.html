@@ -1285,6 +1285,64 @@ async function autoSolve(){
   var out=document.getElementById('output');
   if(out)new MutationObserver(fire).observe(out,{childList:true});
 })();
+
+/* ── CURSOR PLASMA TRAIL — fire + energy particles follow the cursor ──── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;';
+  document.body.appendChild(cv);
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  window.addEventListener('resize',function(){cv.width=window.innerWidth;cv.height=window.innerHeight;},{passive:true});
+  var ctx=cv.getContext('2d');
+  var pts=[];
+  var MX=innerWidth/2,MY=innerHeight/2,active=false;
+
+  document.addEventListener('mousemove',function(e){
+    MX=e.clientX;MY=e.clientY;active=true;
+    var burst=3+Math.floor(Math.random()*2);
+    for(var i=0;i<burst;i++){
+      var hue=Math.random()<0.55?185+(Math.random()*20-10):270+(Math.random()*30-15);
+      pts.push({
+        x:MX+(Math.random()-.5)*10,y:MY+(Math.random()-.5)*10,
+        vx:(Math.random()-.5)*2.2,vy:(Math.random()-.5)*2.2-1.2,
+        life:1.0,decay:0.022+Math.random()*0.022,
+        r:2+Math.random()*7,hue:hue,bright:55+Math.floor(Math.random()*30)
+      });
+    }
+  },{passive:true});
+
+  (function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(var i=pts.length-1;i>=0;i--){
+      var p=pts[i];
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;
+      p.life-=p.decay;
+      if(p.life<=0){pts.splice(i,1);continue;}
+      var g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(1+0.5*(1-p.life)));
+      g.addColorStop(0,'hsla('+p.hue+',100%,'+p.bright+'%,'+(p.life*0.9)+')');
+      g.addColorStop(0.5,'hsla('+p.hue+',100%,'+(p.bright-20)+'%,'+(p.life*0.45)+')');
+      g.addColorStop(1,'hsla('+p.hue+',100%,30%,0)');
+      ctx.save();ctx.globalAlpha=p.life;
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*(1+(1-p.life)*0.6),0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── SFT SCAN BEAM — moving holographic laser line across playground ──── */
+(function(){
+  var beam=document.createElement('div');
+  beam.style.cssText='position:fixed;left:0;width:100%;height:2px;pointer-events:none;z-index:4;top:-6px;'+
+    'background:linear-gradient(90deg,transparent 0%,rgba(0,207,255,0.0) 20%,rgba(0,207,255,0.55) 50%,rgba(124,58,237,0.45) 70%,transparent 100%);'+
+    'box-shadow:0 0 12px rgba(0,207,255,0.4),0 0 24px rgba(0,207,255,0.2);'+
+    'animation:pg-scan 4.5s linear infinite;';
+  document.body.appendChild(beam);
+  var style=document.createElement('style');
+  style.textContent='@keyframes pg-scan{0%{top:-4px;opacity:0}2%{opacity:1}98%{opacity:0.7}100%{top:100vh;opacity:0}}';
+  document.head.appendChild(style);
+})();
 </script>
 </body>
 </html>

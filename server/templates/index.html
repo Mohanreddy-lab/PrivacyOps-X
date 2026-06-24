@@ -1085,6 +1085,120 @@ window.addEventListener('scroll', () => {
     requestAnimationFrame(loop);
   })();
 })();
+
+/* ── GRAY-SCOTT REACTION-DIFFUSION — WebGL2 GPU living Turing patterns ── */
+(function(){
+  var W=256,H=256;
+  var cv=document.createElement('canvas');
+  cv.width=W;cv.height=H;
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.42;image-rendering:auto;';
+  document.body.appendChild(cv);
+  var gl=cv.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false});
+  if(!gl){return;}
+  if(!gl.getExtension('EXT_color_buffer_float')){cv.remove();return;}
+
+  var VS=`#version 300 es\nin vec2 P;void main(){gl_Position=vec4(P,0.,1.);}`;
+  var SIM_FS=`#version 300 es
+precision highp float;
+uniform sampler2D U;uniform vec2 R;uniform float f,k;uniform vec2 SEED;uniform float SE;
+out vec4 O;
+void main(){
+  vec2 uv=gl_FragCoord.xy/R,ts=1./R;
+  vec2 c=texture(U,uv).rg;
+  vec2 lap=texture(U,uv+vec2(0,ts.y)).rg+texture(U,uv-vec2(0,ts.y)).rg
+          +texture(U,uv+vec2(ts.x,0)).rg+texture(U,uv-vec2(ts.x,0)).rg-4.*c;
+  float a=c.r,b=c.g,r=a*b*b;
+  float na=clamp(a+(1.0*lap.r-r+f*(1.0-a)),0.,1.);
+  float nb=clamp(b+(0.5*lap.g+r-(f+k)*b),0.,1.);
+  if(SE>0.5&&length(gl_FragCoord.xy-SEED)<7.0){na=0.5;nb=0.25;}
+  O=vec4(na,nb,0.,1.);
+}`;
+  var DISP_FS=`#version 300 es
+precision highp float;
+uniform sampler2D U;uniform vec2 R;
+out vec4 O;
+void main(){
+  vec2 ab=texture(U,gl_FragCoord.xy/R).rg;
+  float v=clamp(ab.r-ab.g,0.,1.);
+  vec3 c=v<.33?mix(vec3(0.,0.,.07),vec3(0.,.81,1.),v*3.):
+         v<.66?mix(vec3(0.,.81,1.),vec3(.49,.23,.93),(v-.33)*3.):
+               mix(vec3(.49,.23,.93),vec3(.06,.72,.50),(v-.66)*3.);
+  O=vec4(c*0.45,1.);
+}`;
+
+  function mkSh(t,s){var x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x;}
+  function mkPg(v,f){var p=gl.createProgram();gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);return p;}
+  var vS=mkSh(gl.VERTEX_SHADER,VS);
+  var simP=mkPg(vS,mkSh(gl.FRAGMENT_SHADER,SIM_FS));
+  var dspP=mkPg(vS,mkSh(gl.FRAGMENT_SHADER,DISP_FS));
+  if(!gl.getProgramParameter(simP,gl.LINK_STATUS)||!gl.getProgramParameter(dspP,gl.LINK_STATUS)){cv.remove();return;}
+
+  var qbuf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,qbuf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+
+  function mkTex(d){
+    var t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,W,H,0,gl.RGBA,gl.FLOAT,d);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+    return t;
+  }
+  function mkFB(t){var fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);return fb;}
+
+  var initA=new Float32Array(W*H*4);
+  for(var i=0;i<W*H;i++){initA[i*4]=1.0;initA[i*4+3]=1.0;}
+  for(var s=0;s<70;s++){
+    var sx=4+Math.floor(Math.random()*(W-8)),sy=4+Math.floor(Math.random()*(H-8));
+    for(var dx=-2;dx<=2;dx++)for(var dy=-2;dy<=2;dy++){var idx=((sy+dy)*W+(sx+dx))*4;initA[idx]=0.5;initA[idx+1]=0.25;}
+  }
+  var initB=new Float32Array(W*H*4);
+  for(var i=0;i<W*H;i++){initB[i*4]=1.0;initB[i*4+3]=1.0;}
+
+  var tA=mkTex(initA),tB=mkTex(initB);
+  var fbA=mkFB(tA),fbB=mkFB(tB);
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){cv.remove();return;}
+  var cur={r:tA,w:tB,rfb:fbA,wfb:fbB};
+  function swap(){var t;t=cur.r;cur.r=cur.w;cur.w=t;t=cur.rfb;cur.rfb=cur.wfb;cur.wfb=t;}
+
+  var SEED=[0,0],SE=0,stm=0;
+  document.addEventListener('mousemove',function(e){
+    SEED[0]=e.clientX/innerWidth*W;SEED[1]=(1-e.clientY/innerHeight)*H;SE=1;stm=14;
+  },{passive:true});
+
+  function bindQ(prog){
+    gl.bindBuffer(gl.ARRAY_BUFFER,qbuf);
+    var l=gl.getAttribLocation(prog,'P');
+    gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0);
+  }
+
+  gl.viewport(0,0,W,H);
+  (function frame(){
+    if(stm>0)stm--;else SE=0;
+    gl.useProgram(simP);bindQ(simP);
+    gl.uniform2f(gl.getUniformLocation(simP,'R'),W,H);
+    gl.uniform1f(gl.getUniformLocation(simP,'f'),0.0545);
+    gl.uniform1f(gl.getUniformLocation(simP,'k'),0.062);
+    gl.uniform2f(gl.getUniformLocation(simP,'SEED'),SEED[0],SEED[1]);
+    gl.uniform1f(gl.getUniformLocation(simP,'SE'),SE);
+    gl.uniform1i(gl.getUniformLocation(simP,'U'),0);
+    for(var i=0;i<4;i++){
+      gl.bindFramebuffer(gl.FRAMEBUFFER,cur.wfb);
+      gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,cur.r);
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      swap();
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    gl.useProgram(dspP);bindQ(dspP);
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,cur.r);
+    gl.uniform1i(gl.getUniformLocation(dspP,'U'),0);
+    gl.uniform2f(gl.getUniformLocation(dspP,'R'),W,H);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    requestAnimationFrame(frame);
+  })();
+})();
 </script>
 </body>
 </html>

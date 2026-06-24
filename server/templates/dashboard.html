@@ -1071,6 +1071,79 @@ void main(){
     else{cv.style.transition='opacity 0.4s ease';cv.style.opacity='0';setTimeout(function(){cv.remove();},500);}
   })(start);
 })();
+
+/* ── PRIVACY DATA CASCADE — encrypted data streams falling like rain ──── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.18;';
+  document.body.prepend(cv);
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  window.addEventListener('resize',function(){cv.width=window.innerWidth;cv.height=window.innerHeight;},{passive:true});
+  var ctx=cv.getContext('2d');
+  var COLS=['#00CFFF','#7C3AED','#10B981'];
+  var CHARS='0123456789ABCDEF⊕⊗∇∆∑∏⟨⟩⊆∈∧∨¬≡≠≤≥';
+  var W=cv.width,H=cv.height;
+  window.addEventListener('resize',function(){cv.width=W=window.innerWidth;cv.height=H=window.innerHeight;ctx.font=FS+'px JetBrains Mono,monospace';},{passive:true});
+  var FS=13,NCOLS=Math.floor(W/FS)+2;
+  var drops=[];
+  for(var i=0;i<NCOLS;i++){
+    drops.push({
+      y:Math.random()*H,
+      speed:0.6+Math.random()*2.2,
+      col:COLS[Math.floor(Math.random()*COLS.length)],
+      len:6+Math.floor(Math.random()*18),
+      chars:[]
+    });
+    for(var j=0;j<drops[i].len;j++)drops[i].chars.push(Math.floor(Math.random()*CHARS.length));
+  }
+  ctx.font=FS+'px JetBrains Mono,monospace';
+  var last=0;
+  (function loop(ts){
+    if(ts-last<33){requestAnimationFrame(loop);return;}last=ts;
+    ctx.clearRect(0,0,W,H);
+    ctx.font=FS+'px JetBrains Mono,monospace';
+    for(var i=0;i<drops.length;i++){
+      var d=drops[i];
+      for(var j=0;j<d.chars.length;j++){
+        var frac=j/d.chars.length;
+        var a=frac<0.2?frac*5:1.0-(frac-0.2)/0.8;
+        if(j===d.chars.length-1)a=1.0;
+        ctx.fillStyle=d.col;ctx.globalAlpha=a*(j===d.chars.length-1?0.95:0.35*frac);
+        if(Math.random()<0.04)d.chars[j]=Math.floor(Math.random()*CHARS.length);
+        ctx.fillText(CHARS[d.chars[j]],i*FS,d.y-j*FS);
+      }
+      d.y+=d.speed;
+      if(d.y-d.len*FS>H){d.y=-FS;d.speed=0.6+Math.random()*2.2;d.col=COLS[Math.floor(Math.random()*COLS.length)];}
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(loop);
+  })(0);
+})();
+
+/* ── SCORE-CARD ELECTROMAGNETIC PULSE on hover ───────────────────────── */
+(function(){
+  document.querySelectorAll('.score-card,.glass').forEach(function(card){
+    card.addEventListener('mouseenter',function(){
+      var rings=3;
+      for(var r=0;r<rings;r++){
+        var ring=document.createElement('div');
+        var rect=card.getBoundingClientRect();
+        var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+        ring.style.cssText='position:fixed;border-radius:50%;border:1.5px solid rgba(0,207,255,0.6);pointer-events:none;z-index:99999;'+
+          'left:'+(cx-8)+'px;top:'+(cy-8)+'px;width:16px;height:16px;'+
+          'transition:all 0.6s cubic-bezier(0.22,1,0.36,1);opacity:0.8;';
+        document.body.appendChild(ring);
+        setTimeout(function(el,cx,cy){return function(){
+          var size=120+Math.random()*80;
+          el.style.left=(cx-size/2)+'px';el.style.top=(cy-size/2)+'px';
+          el.style.width=size+'px';el.style.height=size+'px';el.style.opacity='0';
+          el.style.borderColor='rgba(124,58,237,0.2)';
+          setTimeout(function(){el.remove();},650);
+        };}(ring,cx,cy),r*120);
+      }
+    });
+  });
+})();
 </script>
 </body>
 </html>
