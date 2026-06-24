@@ -471,7 +471,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
           </div>
           <div style="font-family:'JetBrains Mono';font-size:9px;letter-spacing:0.14em;color:rgba(178,247,70,0.65);text-transform:uppercase;margin-bottom:10px;">04 / OUTCOME</div>
           <h3 style="font-family:'Space Grotesk';font-size:22px;font-weight:600;color:rgba(255,255,255,0.90);margin-bottom:10px;">Train → Eval Loop</h3>
-          <p style="color:rgba(255,255,255,0.42);font-size:15px;line-height:1.65;">Evaluation, self-improvement, and model training in one environment. Baseline 0.61 → improved 0.95 in 20 episodes.</p>
+          <p style="color:rgba(255,255,255,0.42);font-size:15px;line-height:1.65;">Evaluation, self-improvement, and model training in one environment. Baseline 0.61 → improved 0.96 in 20 episodes.</p>
         </div>
       </div>
     </div>
@@ -524,8 +524,63 @@ a,button,select,input,[role=button] { cursor: none !important; }
         </div>
         <div style="font-family:'JetBrains Mono';font-size:36px;font-weight:700;color:rgba(255,255,255,0.04);position:absolute;top:14px;right:16px;line-height:1;">04</div>
         <h3 style="font-family:'Space Grotesk';font-size:17px;font-weight:600;color:rgba(255,255,255,0.88);margin-bottom:8px;">Read the Score</h3>
-        <p style="color:rgba(255,255,255,0.38);font-size:13px;line-height:1.6;">Final evaluation across 9 dimensions: safety, evidence, compliance.</p>
+        <p style="color:rgba(255,255,255,0.38);font-size:13px;line-height:1.6;">Final evaluation across 11 dimensions: safety, evidence, compliance, deadlock recognition, and more.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ─── ACTION SPACE ───────────────────────────────────────────────────── -->
+  <section class="py-24 px-6 max-w-[1180px] mx-auto">
+    <div class="text-center mb-14 reveal">
+      <div class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full mb-6" style="border:1px solid rgba(0,207,255,0.15);background:rgba(0,207,255,0.04);">
+        <span class="w-1.5 h-1.5 rounded-full" style="background:#00CFFF;"></span>
+        <span style="font-family:'JetBrains Mono';font-size:10px;letter-spacing:0.14em;color:rgba(0,207,255,0.55);text-transform:uppercase;">Full Action Space</span>
+      </div>
+      <h2 style="font-family:'Space Grotesk';font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-0.03em;color:rgba(255,255,255,0.92);margin-bottom:14px;">15 Typed Actions</h2>
+      <p style="color:rgba(255,255,255,0.36);font-size:16px;max-width:500px;margin:0 auto;line-height:1.65;">Every agent action is structured and deterministically evaluated — no free-form prompting.</p>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 reveal delay-1">
+      <!-- Row 1: Core -->
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#00CFFF;font-size:18px;">search</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(0,207,255,0.85);">inspect_case</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Open case file</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#00CFFF;font-size:18px;">folder_open</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(0,207,255,0.85);">open_record</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">View data record</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#7C3AED;font-size:18px;">policy</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(124,58,237,0.85);">search_policy</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Query legal docs</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#7C3AED;font-size:18px;">article</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(124,58,237,0.85);">open_policy_article</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Direct article</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#10B981;font-size:18px;">tune</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(16,185,129,0.85);">set_case_field</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Update workspace</span></div>
+      <!-- Row 2: Communication -->
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#10B981;font-size:18px;">edit_note</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(16,185,129,0.85);">add_internal_note</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Audit log entry</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#10B981;font-size:18px;">draft</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(16,185,129,0.85);">draft_reply</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Compose response</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#00CFFF;font-size:18px;">mail</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(0,207,255,0.85);">message_requester</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Contact requester</span></div>
+      <!-- Row 3: Review -->
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#7C3AED;font-size:18px;">gavel</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(124,58,237,0.85);">request_review</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Legal / compliance</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#7C3AED;font-size:18px;">rate_review</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(124,58,237,0.85);">self_review</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Self-audit</span></div>
+      <!-- Row 4: Security -->
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#FB923C;font-size:18px;">flag</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(251,146,60,0.85);">flag_prompt_injection</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Flag injection</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#EF4444;font-size:18px;">lock</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(239,68,68,0.85);">quarantine_record</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Freeze record</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#8B5CF6;font-size:18px;">balance</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(139,92,246,0.85);">escalate_to_dpa</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">72-hr DPA clock</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2"><span class="material-symbols-outlined" style="color:#06B6D4;font-size:18px;">psychology</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(6,182,212,0.85);">adversarial_review</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Red-team challenge</span></div>
+      <div class="glass rounded-xl p-4 flex flex-col gap-2" style="border-color:rgba(178,247,70,0.20);background:rgba(178,247,70,0.04);"><span class="material-symbols-outlined" style="color:#B2F746;font-size:18px;">send</span><span style="font-family:'JetBrains Mono';font-size:10px;color:rgba(178,247,70,0.85);">submit</span><span style="font-size:11px;color:rgba(255,255,255,0.30);">Final submission</span></div>
+    </div>
+  </section>
+
+  <!-- ─── DIFFICULTY TIERS ─────────────────────────────────────────────── -->
+  <section class="py-16 px-6 max-w-[1180px] mx-auto">
+    <div class="text-center mb-14 reveal">
+      <div class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full mb-6" style="border:1px solid rgba(178,247,70,0.15);background:rgba(178,247,70,0.04);">
+        <span class="w-1.5 h-1.5 rounded-full" style="background:#B2F746;"></span>
+        <span style="font-family:'JetBrains Mono';font-size:10px;letter-spacing:0.14em;color:rgba(178,247,70,0.55);text-transform:uppercase;">Difficulty Ladder</span>
+      </div>
+      <h2 style="font-family:'Space Grotesk';font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-0.03em;color:rgba(255,255,255,0.92);margin-bottom:14px;">8 Difficulty Tiers</h2>
+      <p style="color:rgba(255,255,255,0.36);font-size:16px;max-width:500px;margin:0 auto;line-height:1.65;">From routine access requests to unsolvable regulatory deadlocks.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 reveal delay-1">
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(16,185,129,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">EASY · risk 0.20</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(16,185,129,0.90);margin-bottom:6px;">Verified Access</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Standard identity-verified access request with embedded prompt injection trap.</div></div>
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(0,207,255,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">MEDIUM · risk 0.30</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(0,207,255,0.90);margin-bottom:6px;">Multi-Account Erasure</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Unverified sender requesting deletion across linked accounts with billing retention.</div></div>
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(245,158,11,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">HARD · risk 0.40</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(245,158,11,0.90);margin-bottom:6px;">Guardian + Legal Hold</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Minor account with guardian authority claim, active fraud investigation, legal hold conflict.</div></div>
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(239,68,68,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">FINALE · risk 0.40</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(239,68,68,0.90);margin-bottom:6px;">Cross-Border Cascade</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Multi-jurisdiction erasure spanning GDPR, CPRA, COPPA with cascading partial fulfillment.</div></div>
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(124,58,237,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">FABLE · risk 0.55</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(124,58,237,0.90);margin-bottom:6px;">Synthetic Identity</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Active synthetic identity fraud marker. All external authority claims unverified until cleared.</div></div>
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(168,85,247,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">MYTHOS · risk 0.70</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(168,85,247,0.90);margin-bottom:6px;">Corporate Sanctions</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Requesting entity matches active sanctions watchlist. Immediate denial and DPA reporting required.</div></div>
+      <div class="glass rounded-xl p-5"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(255,94,123,0.60);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">GOD · risk 0.85</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(255,94,123,0.90);margin-bottom:6px;">Forged Warrant</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">Law enforcement override with internal inconsistencies. Mismatched dates, nonexistent statute references.</div></div>
+      <div class="glass rounded-xl p-5" style="border-color:rgba(139,92,246,0.25);background:rgba(139,92,246,0.06);"><div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(139,92,246,0.70);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">IRREDUCIBLE · risk 0.95</div><div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;color:rgba(139,92,246,0.95);margin-bottom:6px;">Constitutional Deadlock</div><div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5;">GDPR + SEC + COPPA simultaneously mandate conflicting actions. No safe harbor. Escalation is the resolution.</div></div>
     </div>
   </section>
 

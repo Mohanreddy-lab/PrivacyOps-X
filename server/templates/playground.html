@@ -478,8 +478,11 @@ a,button,select,input,[role=button] { cursor: none !important; }
 
       <div class="flex flex-col gap-5 flex-grow">
         <!-- JSON Editor -->
-        <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
           <label style="font-family:'JetBrains Mono';font-size:9px;letter-spacing:0.14em;color:rgba(255,255,255,0.30);text-transform:uppercase;">Action JSON</label>
+          <button onclick="copyAction()" id="copy-btn" title="Copy JSON" style="color:rgba(255,255,255,0.28);background:none;border:none;cursor:none;transition:color 0.2s;" class="hover:text-white">
+            <span class="material-symbols-outlined" style="font-size:14px;">content_copy</span>
+          </button>
         </div>
         <div class="code-editor">
           <textarea id="action-json" rows="8" class="w-full pl-6 pr-4 pt-4 pb-4 font-code rounded-xl">{
@@ -892,6 +895,21 @@ document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'r' && !e.shiftKey) { e.preventDefault(); resetEnv(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); clearLog(); }
 });
+
+function copyAction() {
+  var ta = document.getElementById('action-json');
+  if (!ta) return;
+  navigator.clipboard.writeText(ta.value).then(function() {
+    var btn = document.getElementById('copy-btn');
+    if (btn) {
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:#B2F746;">check</span>';
+      setTimeout(function() {
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;">content_copy</span>';
+      }, 1400);
+    }
+    log('SYS', 'Action JSON copied to clipboard', 'sys');
+  });
+}
 
 /* init on load */
 (function() { updateDifficultyBadge(); })();

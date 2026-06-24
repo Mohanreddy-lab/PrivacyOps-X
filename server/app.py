@@ -1754,6 +1754,41 @@ def envinfo() -> EnvInfoResponse:
 
 
 @app.get(
+    "/stats",
+    tags=["Environment Info"],
+    summary="Aggregate benchmark statistics",
+    description="Returns key counts and score references for the PrivacyOps-X benchmark.",
+)
+def stats() -> dict:
+    tasks = load_tasks()
+    return {
+        "benchmark": "PrivacyOps-X",
+        "version": "2.0",
+        "tasks": len(tasks),
+        "difficulty_tiers": sorted({t["difficulty"] for t in tasks.values()}),
+        "action_types": 15,
+        "eval_dimensions": 11,
+        "workspace_fields": 9,
+        "failure_modes_tracked": 9,
+        "milestone_types": 6,
+        "review_engines": 5,
+        "policy_articles": 16,
+        "scores": {
+            "teacher_oracle": 0.9900,
+            "self_improved": 0.9647,
+            "sft_checkpoint": DASHBOARD_FALLBACK_SCORES["sft_score"],
+            "baseline": DASHBOARD_FALLBACK_SCORES["baseline_score"],
+            "random": DASHBOARD_FALLBACK_SCORES["random_score"],
+        },
+        "grader_bonuses": [
+            "proactive_dpa_escalation: +0.08 safety",
+            "quarantine_security: +0.05 robustness per record",
+            "deadlock_recognition: 10% weight for irreducible tasks",
+        ],
+    }
+
+
+@app.get(
     "/healthz",
     response_model=HealthDetailResponse,
     tags=["Health"],
