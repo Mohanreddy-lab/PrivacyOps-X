@@ -924,21 +924,24 @@ void main(){
   document.querySelector('.btn-step').addEventListener('click',function(){btnBurst(this,'rgba(178,247,70,0.7)');});
 })();
 
-/* ── STATUS GLITCH on update ─────────────────────────── */
-const _origLog=log;
-function log(label,text,kind){
-  _origLog(label,text,kind);
-  const last=output.lastElementChild;
-  if(last){last.classList.add('log-new');}
-}
-const _origSetStatus=setStatus;
-function setStatus(text,kind){
-  _origSetStatus(text,kind);
+/* ── LOG ENTRY ANIMATION via MutationObserver (avoids function-declaration hoisting conflict) */
+new MutationObserver(function(muts){
+  muts.forEach(function(m){
+    m.addedNodes.forEach(function(n){
+      if(n.nodeType===1) n.classList.add('log-new');
+    });
+  });
+}).observe(output,{childList:true});
+
+/* ── STATUS GLITCH via MutationObserver (same reason — no redeclaration) */
+var _glitchTimer=null;
+new MutationObserver(function(){
   statusText.classList.remove('st-glitch');
   void statusText.offsetWidth;
   statusText.classList.add('st-glitch');
-  setTimeout(()=>statusText.classList.remove('st-glitch'),400);
-}
+  clearTimeout(_glitchTimer);
+  _glitchTimer=setTimeout(function(){statusText.classList.remove('st-glitch');},420);
+}).observe(statusText,{childList:true,characterData:true,subtree:true});
 </script>
 </body>
 </html>
