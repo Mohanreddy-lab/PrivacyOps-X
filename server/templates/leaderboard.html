@@ -377,6 +377,55 @@ setTimeout(function(){document.querySelectorAll('.reveal').forEach(function(el){
   });
 })();
 
+/* ── VORONOI GLSL BACKGROUND SHADER ─────────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;';
+  document.body.prepend(cv);
+  var gl=cv.getContext('webgl')||cv.getContext('experimental-webgl');
+  if(!gl)return;
+  function resize(){cv.width=innerWidth;cv.height=innerHeight;gl.viewport(0,0,cv.width,cv.height);}
+  resize();window.addEventListener('resize',resize,{passive:true});
+  var VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  var FS=`precision mediump float;
+uniform vec2 R;uniform float T;uniform vec2 M;
+vec2 h2(vec2 p){return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/R;
+  vec2 p=uv*5.5+sin(T*.03)*0.4;
+  vec2 i=floor(p);vec2 f=fract(p);
+  float md=8.;vec2 mg=vec2(0.);
+  for(int y=-2;y<=2;y++)for(int x=-2;x<=2;x++){
+    vec2 g=vec2(x,y);
+    vec2 o=h2(i+g);o=.5+.45*sin(T*.16+6.2831*o);
+    vec2 r=g+o-f;float d=dot(r,r);
+    if(d<md){md=d;mg=g+o;}
+  }
+  float edge=1.-smoothstep(0.,.06,sqrt(md));
+  float hue=mg.x*.3+mg.y*.2+T*.05;
+  vec3 c1=vec3(0.,.81,1.)*(.5+.5*sin(hue));
+  vec3 c2=vec3(.49,.23,.93)*(.5+.5*cos(hue*1.4));
+  vec3 col=mix(vec3(0.),mix(c1,c2,edge*2.),edge);
+  col+=smoothstep(.28,0.,length(uv-M/R))*vec3(0.,.81,1.)*.16;
+  col*=.042+edge*.075;
+  gl_FragColor=vec4(col,1.);
+}`;
+  function sh(t,s){var x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x;}
+  var prog=gl.createProgram();
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog);gl.useProgram(prog);
+  var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  var pos=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+  var uR=gl.getUniformLocation(prog,'R'),uT=gl.getUniformLocation(prog,'T'),uM=gl.getUniformLocation(prog,'M');
+  var MX=cv.width/2,MY=cv.height/2,t0=performance.now();
+  document.addEventListener('mousemove',function(e){MX=e.clientX;MY=cv.height-e.clientY;},{passive:true});
+  (function loop(){
+    gl.uniform2f(uR,cv.width,cv.height);gl.uniform1f(uT,(performance.now()-t0)*.001);gl.uniform2f(uM,MX,MY);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(loop);
+  })();
+})();
+
 /* ── FULL-VIEWPORT RGB GLITCH ON CLICK ───────────────────────────── */
 (function(){
   var cv=document.createElement('canvas');

@@ -549,6 +549,12 @@ a,button,select,input,[role=button] { cursor: none !important; }
           <span class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">send</span>
           <span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;">step() Send Action</span>
         </button>
+
+        <!-- Auto-Solve button -->
+        <button id="auto-solve-btn" onclick="autoSolve()" class="btn-reset mt-2 w-full py-3.5 rounded-xl flex items-center justify-center gap-3" style="background:rgba(178,247,70,0.07);border:1px solid rgba(178,247,70,0.30);color:rgba(178,247,70,0.90);">
+          <span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">smart_toy</span>
+          <span style="font-family:'JetBrains Mono';font-size:11px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;">▶ Watch AI Solve</span>
+        </button>
       </div>
     </section>
 
@@ -1059,6 +1065,40 @@ new MutationObserver(function(){
   });
 })();
 
+/* ── AUTO-SOLVE AI DEMO ──────────────────────────────────────────── */
+var _autoRunning=false;
+async function autoSolve(){
+  if(_autoRunning)return;
+  _autoRunning=true;
+  var btn=document.getElementById('auto-solve-btn');
+  if(btn){btn.style.opacity='0.5';btn.style.pointerEvents='none';}
+  try{
+    /* 1. reset the env */
+    await resetEnv();
+    await new Promise(function(r){setTimeout(r,900);});
+
+    /* 2. fetch teacher trajectory */
+    var data=await request('/api/teacher-trajectory');
+    var traj=data.trajectory||[];
+    var ta=document.getElementById('action-json');
+
+    log('SYS','🤖 AI agent starting — '+traj.length+' actions in teacher trajectory','sys');
+
+    /* 3. step through each action */
+    for(var i=0;i<traj.length;i++){
+      var action=traj[i];
+      if(ta)ta.value=JSON.stringify(action,null,2);
+      await new Promise(function(r){setTimeout(r,1400);});
+      await runStep();
+      /* stop if episode done */
+      var outEl=document.getElementById('output');
+      if(outEl&&outEl.textContent.includes('Episode complete'))break;
+    }
+    log('SYS','🏁 Auto-solve complete','sys');
+  }catch(e){log('ERR','Auto-solve: '+String(e),'err');}
+  finally{_autoRunning=false;if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}}
+}
+
 /* ── WEB AUDIO AGENT SYNTHESIZER ────────────────────────────────── */
 (function(){
   var AC=null,master=null,muted=false;
@@ -1110,6 +1150,33 @@ new MutationObserver(function(){
   if(resetBtn)resetBtn.addEventListener('click',function(){boot();playReset();});
   var out=document.getElementById('output');
   if(out)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.textContent&&/done|submit|complete/i.test(n.textContent))playSuccess();});});}).observe(out,{childList:true});
+})();
+
+/* ── AUDIO FREQUENCY VISUALIZER RING ────────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;left:8px;bottom:126px;width:76px;height:76px;z-index:9000;pointer-events:none;opacity:0.72;';
+  document.body.appendChild(cv);cv.width=76;cv.height=76;
+  var ctx=cv.getContext('2d'),N=72,CX=38,CY=38,R=18,t=0;
+  (function loop(){
+    t+=0.038;ctx.clearRect(0,0,76,76);
+    ctx.beginPath();
+    for(var i=0;i<=N;i++){
+      var a=(i/N)*Math.PI*2;
+      var wave=0.38*Math.sin(t*1.3+i*0.28)+0.14*Math.sin(t*2.9+i*0.75)+0.07*Math.sin(t*0.6+i*1.5);
+      var r=R+wave*13;
+      var x=CX+Math.cos(a)*r,y=CY+Math.sin(a)*r;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    var g=ctx.createRadialGradient(CX,CY,R-4,CX,CY,R+14);
+    g.addColorStop(0,'rgba(0,207,255,0)');g.addColorStop(1,'rgba(0,207,255,0.40)');
+    ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle='rgba(0,207,255,0.75)';ctx.lineWidth=1.2;ctx.stroke();
+    /* center dot */
+    ctx.fillStyle='rgba(0,207,255,0.55)';ctx.beginPath();ctx.arc(CX,CY,3.5,0,Math.PI*2);ctx.fill();
+    requestAnimationFrame(loop);
+  })();
 })();
 
 /* ── FULL-VIEWPORT RGB GLITCH ON CLICK ───────────────────────────── */

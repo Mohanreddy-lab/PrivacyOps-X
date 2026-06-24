@@ -1953,6 +1953,11 @@ def dashboard() -> str:
     """
 
 
+@app.get("/api/teacher-trajectory", include_in_schema=False)
+def teacher_trajectory() -> JSONResponse:
+    return JSONResponse({"trajectory": DASHBOARD_FALLBACK_AFTER, "total": len(DASHBOARD_FALLBACK_AFTER)})
+
+
 @app.get("/leaderboard", include_in_schema=False, response_class=HTMLResponse)
 def leaderboard() -> str:
     payload = _load_dashboard_payload()
