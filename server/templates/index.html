@@ -278,6 +278,9 @@ a,button,select,input,[role=button] { cursor: none !important; }
 @keyframes data-rise{0%{transform:translateY(0);opacity:.6;}100%{transform:translateY(-100vh);opacity:0;}}
 .data-char{position:fixed;pointer-events:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(0,207,255,0.22);z-index:0;animation:data-rise linear infinite;}
 
+/* ── SPIRAL GALAXY CANVAS ────────────────────────────────────────── */
+#galaxy-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:-2;opacity:.55;}
+
 /* ── CURSOR TRAIL CANVAS ─────────────────────────────────────────── */
 #trail-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;}
 
@@ -302,6 +305,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
 <div id="cx-dot"></div>
 <div id="cx-orb"></div>
 <canvas id="neural-canvas"></canvas>
+<canvas id="galaxy-canvas"></canvas>
 <canvas id="trail-canvas"></canvas>
 <div id="scanner"></div>
 
@@ -876,6 +880,80 @@ window.addEventListener('scroll', () => {
       });
     });
   },{threshold:.55}).observe(strip);
+})();
+
+/* ── 9. SPIRAL GALAXY ────────────────────────────────────────────── */
+(function(){
+  var cv=document.getElementById('galaxy-canvas');if(!cv)return;
+  var ctx=cv.getContext('2d');
+  var W,H,CX,CY;
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;CX=W/2;CY=H/2;}
+  window.addEventListener('resize',resize,{passive:true});resize();
+  var ARMS=3,SPE=180,stars=[];
+  for(var a=0;a<ARMS;a++){
+    var base=(a/ARMS)*Math.PI*2;
+    for(var i=0;i<SPE;i++){
+      var t=i/SPE,r=65+t*Math.min(W,H)*.36,ang=base+t*Math.PI*2.8+(Math.random()-.5)*.45;
+      var col=a===0?'0,207,255':a===1?'178,247,70':'124,58,237';
+      stars.push({r:r,ang:ang,spd:.00006+Math.random()*.00004,br:.25+Math.random()*.75,
+        sz:.4+Math.random()*1.4,col:col,tw:Math.random()*6.28,tspd:.02+Math.random()*.04});
+    }
+  }
+  for(var j=0;j<60;j++){
+    stars.push({r:Math.random()*55,ang:Math.random()*6.28,spd:.0003+Math.random()*.0003,
+      br:.3+Math.random()*.7,sz:.3+Math.random()*.9,col:'0,207,255',
+      tw:Math.random()*6.28,tspd:.03+Math.random()*.05});
+  }
+  var mmx=W/2,mmy=H/2;
+  window.addEventListener('mousemove',function(e){mmx=e.clientX;mmy=e.clientY;},{passive:true});
+  (function draw(){
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.ang+=s.spd;s.tw+=s.tspd;
+      var x=CX+Math.cos(s.ang)*s.r,y=CY+Math.sin(s.ang)*s.r;
+      var md=Math.hypot(mmx-x,mmy-y);
+      if(md<180)s.ang+=(.9-md/180)*.013;
+      var tw=.5+.5*Math.sin(s.tw),al=(s.br*(.6+.4*tw)*.62).toFixed(3);
+      ctx.beginPath();ctx.arc(x,y,s.sz*(.8+.2*tw),0,Math.PI*2);
+      ctx.fillStyle='rgba('+s.col+','+al+')';ctx.fill();
+      if(s.br>.72){ctx.beginPath();ctx.arc(x,y,s.sz*3.5,0,Math.PI*2);
+        ctx.fillStyle='rgba('+s.col+','+(al*.07)+')';ctx.fill();}
+    });
+    var g=ctx.createRadialGradient(CX,CY,0,CX,CY,55);
+    g.addColorStop(0,'rgba(0,207,255,0.10)');g.addColorStop(.55,'rgba(124,58,237,0.05)');g.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(CX,CY,55,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ── 10. LIQUID CURSOR SQUISH ────────────────────────────────────── */
+(function(){
+  var orb=document.getElementById('cx-orb');if(!orb)return;
+  var lx=-200,ly=-200,vx=0,vy=0;
+  document.addEventListener('mousemove',function(e){
+    vx=vx*.5+(e.clientX-lx)*.5;vy=vy*.5+(e.clientY-ly)*.5;
+    lx=e.clientX;ly=e.clientY;
+  },{passive:true});
+  (function tick(){
+    vx*=.84;vy*=.84;
+    var sp=Math.hypot(vx,vy),ang=Math.atan2(vy,vx)*180/Math.PI;
+    var sq=Math.min(sp*.048,.42),sx=(1+sq).toFixed(3),sy=(1-sq*.55).toFixed(3);
+    orb.style.transform='translate(-50%,-50%) rotate('+ang.toFixed(1)+'deg) scale('+sx+','+sy+')';
+    requestAnimationFrame(tick);
+  })();
+})();
+
+/* ── 11. SCROLL CHROMATIC ABERRATION ─────────────────────────────── */
+(function(){
+  var mainEl=document.querySelector('main'),timer=null;if(!mainEl)return;
+  window.addEventListener('scroll',function(){
+    mainEl.style.cssText+=';filter:drop-shadow(2px 0 0 rgba(0,207,255,.10)) drop-shadow(-2px 0 0 rgba(178,247,70,.08));transition:filter 0s';
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      mainEl.style.transition='filter .45s ease-out';
+      mainEl.style.filter='none';
+    },90);
+  },{passive:true});
 })();
 
 /* ── 8. SECTION H2 SCRAMBLE-GLITCH on scroll-in ─────────────────── */
