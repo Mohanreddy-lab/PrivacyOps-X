@@ -1059,6 +1059,82 @@ new MutationObserver(function(){
   });
 })();
 
+/* ── WEB AUDIO AGENT SYNTHESIZER ────────────────────────────────── */
+(function(){
+  var AC=null,master=null,muted=false;
+  var FREQS={inspect_case:261.63,open_record:293.66,search_policy:329.63,set_case_field:349.23,
+    message_requester:392,draft_reply:440,add_internal_note:493.88,
+    request_review:523.25,self_review:587.33,submit:659.26,default:392};
+
+  function boot(){
+    if(AC)return;
+    AC=new(window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain();master.gain.value=0.14;master.connect(AC.destination);
+    /* ambient drone: two detuned sines */
+    var dg=AC.createGain();dg.gain.value=0;
+    [55,55.7].forEach(function(f){var o=AC.createOscillator();o.type='sine';o.frequency.value=f;o.connect(dg);o.start();});
+    dg.connect(master);
+    dg.gain.setValueAtTime(0,AC.currentTime);dg.gain.linearRampToValueAtTime(0.07,AC.currentTime+2.5);
+  }
+
+  function tone(freq,type,dur,vol){
+    if(!AC||muted)return;
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'triangle';o.frequency.value=freq;
+    g.gain.setValueAtTime(0.001,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol||0.22,AC.currentTime+0.022);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+dur);
+    o.connect(g);g.connect(master);o.start();o.stop(AC.currentTime+dur+0.05);
+  }
+
+  function playAction(t){tone(FREQS[t]||FREQS.default,'triangle',0.36,0.20);setTimeout(function(){tone((FREQS[t]||FREQS.default)*1.5,'sine',0.26,0.07);},38);}
+  function playSuccess(){[261.63,329.63,392,523.25,659.26].forEach(function(f,i){setTimeout(function(){tone(f,'triangle',0.55,0.16);},i*85);});}
+  function playReset(){tone(220,'sine',0.9,0.13);setTimeout(function(){tone(277,'sine',0.7,0.08);},110);}
+
+  /* toggle button */
+  var btn=document.createElement('button');
+  btn.textContent='♪';btn.title='Toggle sound';
+  btn.style.cssText='position:fixed;bottom:80px;left:16px;z-index:9001;width:38px;height:38px;border-radius:50%;border:1px solid rgba(0,207,255,0.28);background:rgba(0,10,28,0.88);color:#00CFFF;font-size:16px;cursor:none;backdrop-filter:blur(8px);transition:all .2s;font-family:serif;';
+  btn.addEventListener('click',function(){boot();muted=!muted;btn.style.color=muted?'rgba(255,255,255,.2)':'#00CFFF';btn.style.borderColor=muted?'rgba(255,255,255,.08)':'rgba(0,207,255,.28)';});
+  document.body.appendChild(btn);
+
+  /* hook buttons */
+  var stepBtn=document.querySelector('.btn-step');
+  if(stepBtn)stepBtn.addEventListener('click',function(){
+    boot();
+    var ta=document.getElementById('action-json');var t='default';
+    if(ta){try{t=(JSON.parse(ta.value)||{}).action_type||'default';}catch(e){}}
+    playAction(t);
+  });
+  var resetBtn=document.querySelector('.btn-reset');
+  if(resetBtn)resetBtn.addEventListener('click',function(){boot();playReset();});
+  var out=document.getElementById('output');
+  if(out)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.textContent&&/done|submit|complete/i.test(n.textContent))playSuccess();});});}).observe(out,{childList:true});
+})();
+
+/* ── FULL-VIEWPORT RGB GLITCH ON CLICK ───────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:99998;pointer-events:none;opacity:0;';
+  document.body.appendChild(cv);
+  document.addEventListener('click',function(){
+    cv.width=window.innerWidth;cv.height=window.innerHeight;
+    var ctx=cv.getContext('2d'),frames=0,MAX=7;
+    cv.style.opacity='1';
+    (function g(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      for(var i=0;i<5;i++){
+        var y=Math.random()*cv.height,h=2+Math.random()*9,dx=(-10+Math.random()*20)|0;
+        ctx.fillStyle='rgba(255,0,60,0.14)';ctx.fillRect(dx,y,cv.width,h);
+        ctx.fillStyle='rgba(0,207,255,0.14)';ctx.fillRect(-dx,y+h,cv.width,h*.6);
+      }
+      for(var j=0;j<4;j++){ctx.fillStyle='rgba(178,247,70,0.055)';ctx.fillRect(Math.random()*cv.width,0,1+Math.random()*2,cv.height);}
+      if(++frames<MAX)requestAnimationFrame(g);
+      else{cv.style.opacity='0';ctx.clearRect(0,0,cv.width,cv.height);}
+    })();
+  });
+})();
+
 /* ── HYPERSPACE WARP ON LOAD ─────────────────────────────────────── */
 (function(){
   var cv=document.createElement('canvas');

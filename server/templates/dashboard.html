@@ -975,6 +975,78 @@ window.addEventListener('load', () => {
   document.addEventListener('click',e=>boom(e.clientX,e.clientY));
 })();
 
+/* ── GLSL DATA-FLOW BACKGROUND SHADER ───────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;';
+  document.body.prepend(cv);
+  var gl=cv.getContext('webgl')||cv.getContext('experimental-webgl');
+  if(!gl)return;
+  function resize(){cv.width=window.innerWidth;cv.height=window.innerHeight;gl.viewport(0,0,cv.width,cv.height);}
+  resize();window.addEventListener('resize',resize,{passive:true});
+
+  var VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  var FS=`precision mediump float;
+uniform vec2 R;uniform float T;uniform vec2 M;
+float N(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float S(vec2 p){vec2 i=floor(p),f=fract(p)*fract(p)*(3.-2.*fract(p));return mix(mix(N(i),N(i+vec2(1,0)),f.x),mix(N(i+vec2(0,1)),N(i+1.),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*S(p);p=p*2.1+.37;a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/R;
+  vec2 p=uv*3.2;float t=T*.1;vec2 m=M/R;
+  float n=fbm(p+t);
+  float n2=fbm(p+n*1.4-t*.65+2.8);
+  float f=fbm(p+n2*.9+t*.32);
+  float lines=pow(max(0.,sin(uv.x*64.+n*20.+t*2.8)),9.)*.38;
+  f+=lines+smoothstep(.38,0.,length(uv-m))*.12;
+  vec3 c=mix(vec3(0.,.81,1.),vec3(.49,.23,.93),f);
+  c=mix(c,vec3(.06,.72,.5),sin(f*3.14159+t)*.5+.5);
+  c*=(.032+f*.06);
+  gl_FragColor=vec4(c,1.);
+}`;
+
+  function sh(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+  var prog=gl.createProgram();
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog);gl.useProgram(prog);
+
+  var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  var pos=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+
+  var uR=gl.getUniformLocation(prog,'R'),uT=gl.getUniformLocation(prog,'T'),uM=gl.getUniformLocation(prog,'M');
+  var MX=cv.width/2,MY=cv.height/2,t0=performance.now();
+  document.addEventListener('mousemove',function(e){MX=e.clientX;MY=cv.height-e.clientY;},{passive:true});
+  (function loop(){
+    gl.uniform2f(uR,cv.width,cv.height);gl.uniform1f(uT,(performance.now()-t0)*.001);gl.uniform2f(uM,MX,MY);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── FULL-VIEWPORT RGB GLITCH ON CLICK ───────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:99998;pointer-events:none;opacity:0;';
+  document.body.appendChild(cv);
+  document.addEventListener('click',function(){
+    cv.width=window.innerWidth;cv.height=window.innerHeight;
+    var ctx=cv.getContext('2d'),frames=0,MAX=7;
+    cv.style.opacity='1';
+    (function g(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      for(var i=0;i<5;i++){
+        var y=Math.random()*cv.height,h=2+Math.random()*9,dx=(-10+Math.random()*20)|0;
+        ctx.fillStyle='rgba(255,0,60,0.14)';ctx.fillRect(dx,y,cv.width,h);
+        ctx.fillStyle='rgba(0,207,255,0.14)';ctx.fillRect(-dx,y+h,cv.width,h*.6);
+      }
+      for(var j=0;j<4;j++){ctx.fillStyle='rgba(178,247,70,0.055)';ctx.fillRect(Math.random()*cv.width,0,1+Math.random()*2,cv.height);}
+      if(++frames<MAX)requestAnimationFrame(g);
+      else{cv.style.opacity='0';ctx.clearRect(0,0,cv.width,cv.height);}
+    })();
+  });
+})();
+
 /* ── HYPERSPACE WARP ON LOAD ─────────────────────────────────────── */
 (function(){
   var cv=document.createElement('canvas');

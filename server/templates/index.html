@@ -1011,6 +1011,23 @@ window.addEventListener('scroll', () => {
   });
 })();
 
+/* ── FULL-VIEWPORT RGB GLITCH ON CLICK ───────────────────────────── */
+(function(){
+  var cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:99998;pointer-events:none;opacity:0;';
+  document.body.appendChild(cv);
+  document.addEventListener('click',function(){
+    cv.width=window.innerWidth;cv.height=window.innerHeight;
+    var ctx=cv.getContext('2d'),frames=0,MAX=7;cv.style.opacity='1';
+    (function g(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      for(var i=0;i<5;i++){var y=Math.random()*cv.height,h=2+Math.random()*9,dx=(-10+Math.random()*20)|0;ctx.fillStyle='rgba(255,0,60,0.14)';ctx.fillRect(dx,y,cv.width,h);ctx.fillStyle='rgba(0,207,255,0.14)';ctx.fillRect(-dx,y+h,cv.width,h*.6);}
+      for(var j=0;j<4;j++){ctx.fillStyle='rgba(178,247,70,0.055)';ctx.fillRect(Math.random()*cv.width,0,1+Math.random()*2,cv.height);}
+      if(++frames<MAX)requestAnimationFrame(g);else{cv.style.opacity='0';ctx.clearRect(0,0,cv.width,cv.height);}
+    })();
+  });
+})();
+
 /* ── HYPERSPACE WARP ON LOAD ─────────────────────────────────────── */
 (function(){
   var cv=document.createElement('canvas');
