@@ -395,7 +395,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
     <section class="lg:col-span-3 glass rounded-2xl p-5 flex flex-col">
       <div class="flex items-center gap-3 pb-4 mb-5 border-b" style="border-color:rgba(0,207,255,0.10);">
         <span class="material-symbols-outlined" style="color:#00CFFF;font-size:18px;font-variation-settings:'FILL' 1">tune</span>
-        <span class="section-head">Case Setup</span>
+        <span class="section-head">Episode control</span>
       </div>
 
       <div class="flex flex-col gap-5 flex-grow">
@@ -423,7 +423,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
         <div class="mt-2">
           <button onclick="resetEnv()" class="btn-reset w-full py-4 rounded-xl flex items-center justify-center gap-3 font-['JetBrains Mono']" style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;">
             <span class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">play_circle</span>
-            reset() Start Case
+            Reset episode
           </button>
         </div>
 
@@ -470,6 +470,9 @@ a,button,select,input,[role=button] { cursor: none !important; }
 
       <div class="flex flex-col gap-5 flex-grow">
         <!-- JSON Editor -->
+        <div class="flex flex-col gap-2">
+          <label style="font-family:'JetBrains Mono';font-size:9px;letter-spacing:0.14em;color:rgba(255,255,255,0.30);text-transform:uppercase;">Action JSON</label>
+        </div>
         <div class="code-editor">
           <textarea id="action-json" rows="8" class="w-full pl-6 pr-4 pt-4 pb-4 font-code rounded-xl">{
   "action_type": "inspect_case"
@@ -643,7 +646,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
         <div class="flex items-center justify-between px-5 py-3.5 border-b flex-shrink-0" style="border-color:rgba(0,207,255,0.10);background:rgba(0,0,0,0.30);">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined" style="color:#00CFFF;font-size:16px;">dns</span>
-            <span class="section-head">Live Environment Log</span>
+            <span class="section-head">Live response</span>
           </div>
           <button onclick="clearLog()" class="hover:text-white transition-colors" style="color:rgba(255,255,255,0.30);" title="Clear log">
             <span class="material-symbols-outlined" style="font-size:16px;">clear_all</span>
@@ -734,16 +737,20 @@ function log(label, text, kind) {
   output.scrollTop = output.scrollHeight;
 }
 
-function logJson(label, obj) {
+function logJson(label, payload) {
   const wrap = document.createElement('div');
   wrap.className = 'mb-1';
   wrap.innerHTML = `<span style="color:rgba(0,207,255,0.28);">${ts()}</span> <span style="color:rgba(0,207,255,0.65);">[${label}]</span>`;
   const pre = document.createElement('pre');
   pre.style.cssText = 'margin:4px 0 8px 0;padding:8px 12px;border-left:2px solid rgba(0,207,255,0.18);background:rgba(0,207,255,0.03);border-radius:0 8px 8px 0;color:rgba(0,207,255,0.70);font-size:11px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;';
-  pre.textContent = JSON.stringify(obj, null, 2);
+  pre.textContent = JSON.stringify(payload, null, 2);
   output.appendChild(wrap);
   output.appendChild(pre);
   output.scrollTop = output.scrollHeight;
+}
+
+function clearOutput(title) {
+  output.textContent = title + ' — log cleared';
 }
 
 function setStatus(text, kind) {
