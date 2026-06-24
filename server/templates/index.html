@@ -327,10 +327,10 @@ a,button,select,input,[role=button] { cursor: none !important; }
     </a>
 
     <div class="hidden md:flex items-center gap-8">
-      <a href="/playground" class="nav-link">Playground</a>
-      <a href="/dashboard"  class="nav-link">Dashboard</a>
-      <a href="/docs"       class="nav-link">API Docs</a>
-      <a href="/judge-report" class="nav-link">Judge Report</a>
+      <a href="/playground"  class="nav-link">Playground</a>
+      <a href="/dashboard"   class="nav-link">Dashboard</a>
+      <a href="/leaderboard" class="nav-link">Leaderboard</a>
+      <a href="/docs"        class="nav-link">API Docs</a>
     </div>
 
     <a href="/playground" class="btn-cyan px-5 py-2.5 rounded-xl no-underline" style="font-family:'JetBrains Mono';font-size:11px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;">
@@ -360,7 +360,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
     <h1 class="reveal delay-1 grad-text" style="font-family:'Space Grotesk';font-weight:800;letter-spacing:-0.045em;line-height:0.92;font-size:clamp(68px,11.5vw,138px);margin-bottom:32px;">
       PrivacyOps·X
     </h1>
-    <p class="reveal delay-2" style="font-size:clamp(14px,1.4vw,18px);font-weight:300;color:rgba(255,255,255,0.45);max-width:560px;line-height:1.7;margin-bottom:48px;letter-spacing:0.01em;">
+    <p id="hero-sub" class="reveal delay-2" style="font-size:clamp(14px,1.4vw,18px);font-weight:300;color:rgba(255,255,255,0.45);max-width:560px;line-height:1.7;margin-bottom:48px;letter-spacing:0.01em;">
       A deterministic benchmark for privacy operations — tests whether AI agents can handle real cases safely, follow policy, use evidence, and reach the correct final decision.
     </p>
 
@@ -373,6 +373,10 @@ a,button,select,input,[role=button] { cursor: none !important; }
       <a href="/dashboard" class="btn-ghost flex items-center gap-3 px-8 py-4 rounded-xl no-underline" style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;">
         <span class="material-symbols-outlined" style="font-size:18px;">monitoring</span>
         View Results
+      </a>
+      <a href="/leaderboard" class="flex items-center gap-3 px-8 py-4 rounded-xl no-underline" style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;border:1px solid rgba(178,247,70,0.30);color:rgba(178,247,70,0.85);background:rgba(178,247,70,0.06);transition:all .25s;">
+        <span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">leaderboard</span>
+        Leaderboard
       </a>
     </div>
 
@@ -595,10 +599,10 @@ a,button,select,input,[role=button] { cursor: none !important; }
       <span style="font-family:'Space Grotesk';font-size:18px;font-weight:700;letter-spacing:-0.02em;color:rgba(255,255,255,0.75);">PrivacyOps<span style="color:#00CFFF;">·X</span></span>
     </div>
     <div class="flex flex-wrap justify-center gap-8">
-      <a href="/playground"   class="nav-link">Playground</a>
-      <a href="/dashboard"    class="nav-link">Dashboard</a>
-      <a href="/docs"         class="nav-link">API Docs</a>
-      <a href="/judge-report" class="nav-link">Judge Report</a>
+      <a href="/playground"  class="nav-link">Playground</a>
+      <a href="/dashboard"   class="nav-link">Dashboard</a>
+      <a href="/leaderboard" class="nav-link">Leaderboard</a>
+      <a href="/docs"        class="nav-link">API Docs</a>
     </div>
     <div style="font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,0.18);letter-spacing:0.06em;">© 2025 PrivacyOps-X · Secure · Sovereign · Anonymous</div>
   </div>
@@ -814,7 +818,33 @@ window.addEventListener('scroll', () => {
   })();
 })();
 
-/* ── 5. FLOATING DATA CHARACTERS ─────────────────────────────────── */
+/* ── 5. MORPHING HERO SUBTITLE ───────────────────────────────────── */
+(function(){
+  var el=document.getElementById('hero-sub');if(!el)return;
+  var phrases=[
+    'A deterministic benchmark for privacy operations — tests whether AI agents can handle real cases safely, follow policy, use evidence, and reach the correct final decision.',
+    'Handling GDPR erasure requests, legal holds, and cross-border recovery — one typed action at a time, scored by safety and evidence.',
+    'Self-improvement loop: the same agent scores 0.61 baseline, then reaches 0.95 after 20 episodes of feedback — no retraining required.',
+    'From identity verification to fraud-linked escalation — PrivacyOps-X measures the full operational decision chain, not just the final reply.',
+    'Fine-tune your model on benchmark episodes, evaluate on hidden variants, and track every dimension: compliance, safety, legal, efficiency.',
+  ];
+  var idx=0,ti=null;
+  function fade(newText){
+    el.style.transition='opacity 0.38s ease';
+    el.style.opacity='0';
+    clearTimeout(ti);
+    ti=setTimeout(function(){
+      el.textContent=newText;
+      el.style.opacity='1';
+    },400);
+  }
+  setInterval(function(){
+    idx=(idx+1)%phrases.length;
+    fade(phrases[idx]);
+  },5200);
+})();
+
+/* ── 6. FLOATING DATA CHARACTERS ─────────────────────────────────── */
 (function(){
   const DATA='01アイΩ≡∑{}[]<>:#$';
   for(let i=0;i<16;i++){

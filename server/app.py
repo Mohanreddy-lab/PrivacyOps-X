@@ -1948,6 +1948,16 @@ def dashboard() -> str:
     """
 
 
+@app.get("/leaderboard", include_in_schema=False, response_class=HTMLResponse)
+def leaderboard() -> str:
+    payload = _load_dashboard_payload()
+    sft_score = _format_score(payload["sft_score"])
+    tmpl = _read_template("leaderboard.html")
+    if tmpl:
+        return tmpl.replace("$sft_score", sft_score)
+    return HTMLResponse("<p>Leaderboard not available.</p>", status_code=404)
+
+
 @app.get("/playground", include_in_schema=False, response_class=HTMLResponse)
 @app.get("/playground-ui", include_in_schema=False, response_class=HTMLResponse)
 def playground_ui() -> str:

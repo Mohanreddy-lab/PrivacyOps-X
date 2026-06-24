@@ -309,10 +309,11 @@ a,button,select,input,[role=button] { cursor: none !important; }
     </a>
 
     <div class="hidden md:flex items-center gap-8">
-      <a href="/"           class="nav-link">Home</a>
-      <a href="/dashboard"  class="nav-link active">Dashboard</a>
-      <a href="/docs"       class="nav-link">API Docs</a>
-      <a href="/playground" class="nav-link">Playground</a>
+      <a href="/"            class="nav-link">Home</a>
+      <a href="/playground"  class="nav-link">Playground</a>
+      <a href="/dashboard"   class="nav-link active">Dashboard</a>
+      <a href="/leaderboard" class="nav-link">Leaderboard</a>
+      <a href="/docs"        class="nav-link">API Docs</a>
     </div>
 
     <a href="/playground" class="btn-primary px-5 py-2.5 rounded-xl no-underline">Open Playground</a>
@@ -483,6 +484,19 @@ a,button,select,input,[role=button] { cursor: none !important; }
     </div>
   </section>
 
+  <!-- ─── TRAINING LOSS CURVE ─────────────────────────────────────────── -->
+  <section id="loss-section" class="reveal">
+    <div class="sec-label">Training Loss &amp; Score — SFT Run (Animated)</div>
+    <div class="glass rounded-2xl p-6">
+      <canvas id="loss-canvas" width="900" height="220" style="width:100%;display:block;border-radius:10px;"></canvas>
+      <div style="display:flex;gap:24px;margin-top:12px;font-family:'JetBrains Mono';font-size:10px;">
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:20px;height:2px;background:#FF5E7B;border-radius:1px;"></div><span style="color:rgba(255,255,255,.32);">Training Loss</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:20px;height:2px;background:#00CFFF;border-radius:1px;"></div><span style="color:rgba(255,255,255,.32);">Eval Score</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:20px;height:2px;background:#B2F746;border-radius:1px;"></div><span style="color:rgba(255,255,255,.32);">LR (scaled)</span></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ─── PLOTS ────────────────────────────────────────────────────────── -->
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="glass rounded-2xl p-6 flex flex-col">
@@ -604,10 +618,10 @@ a,button,select,input,[role=button] { cursor: none !important; }
       <span style="font-family:'Space Grotesk';font-size:18px;font-weight:700;letter-spacing:-0.02em;color:rgba(255,255,255,0.70);">PrivacyOps<span style="color:#00CFFF;">·X</span></span>
     </div>
     <div class="flex flex-wrap justify-center gap-8">
-      <a href="/"           class="nav-link">Home</a>
-      <a href="/playground" class="nav-link">Playground</a>
-      <a href="/docs"       class="nav-link">API Docs</a>
-      <a href="/judge-report" class="nav-link">Judge Report</a>
+      <a href="/"            class="nav-link">Home</a>
+      <a href="/playground"  class="nav-link">Playground</a>
+      <a href="/leaderboard" class="nav-link">Leaderboard</a>
+      <a href="/docs"        class="nav-link">API Docs</a>
     </div>
     <div style="font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,0.18);letter-spacing:0.06em;">© 2025 PrivacyOps-X · Secure · Sovereign · Anonymous</div>
   </div>
@@ -819,6 +833,107 @@ window.addEventListener('load', () => {
       leg.appendChild(div);
     });
   }
+})();
+
+/* ════════════════════════════════════════════════════
+   TRAINING LOSS CURVE ANIMATION
+   ════════════════════════════════════════════════════ */
+(function(){
+  var cv=document.getElementById('loss-canvas');
+  if(!cv)return;
+  var ctx=cv.getContext('2d');
+  var W=cv.width,H=cv.height;
+  var PAD={t:24,r:30,b:36,l:52};
+  var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
+  var N=60;
+
+  /* generate smooth curves using seeded pseudo-random */
+  function prng(seed){var s=seed;return function(){s=((s*1664525)+1013904223)&0xFFFFFFFF;return(s>>>0)/0xFFFFFFFF;};}
+  var rand=prng(42);
+
+  var loss=[],score=[],lr=[];
+  for(var i=0;i<N;i++){
+    var t=i/(N-1);
+    var lv=2.6*Math.exp(-3.2*t)+0.32+(rand()-.5)*.12;
+    loss.push(Math.max(0.18,lv));
+    var sv=0.35+(0.62/(1+Math.exp(-8*(t-.38))))+(rand()-.5)*.04;
+    score.push(Math.min(0.98,Math.max(0.30,sv)));
+    var warmup=i<6?(i/6):1;
+    lr.push(warmup*(.5+.5*Math.cos(Math.PI*Math.max(0,(i-6)/(N-7)))));
+  }
+
+  function yLoss(v){return PAD.t+CH*(1-(v-0.1)/(3.0-0.1));}
+  function yScore(v){return PAD.t+CH*(1-v);}
+  function xAt(i){return PAD.l+CW*(i/(N-1));}
+
+  function drawFrame(p){
+    ctx.clearRect(0,0,W,H);
+    var n=Math.max(2,Math.round(p*N));
+
+    /* grid */
+    ctx.strokeStyle='rgba(255,255,255,0.035)';ctx.lineWidth=1;
+    for(var g=0;g<=4;g++){
+      var gy=PAD.t+CH*(g/4);
+      ctx.beginPath();ctx.moveTo(PAD.l,gy);ctx.lineTo(PAD.l+CW,gy);ctx.stroke();
+    }
+
+    /* axis labels */
+    ctx.fillStyle='rgba(255,255,255,0.22)';ctx.font='11px JetBrains Mono';ctx.textAlign='right';
+    ['3.0','2.0','1.0','0.0'].forEach(function(v,i){ctx.fillText(v,PAD.l-6,PAD.t+CH*(i/3)+4);});
+    ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.16)';ctx.font='10px JetBrains Mono';
+    [0,15,30,45,59].forEach(function(s){ctx.fillText('step '+s,xAt(s),PAD.t+CH+22);});
+
+    function drawLine(data,yFn,color,glow){
+      ctx.save();
+      ctx.shadowColor=color;ctx.shadowBlur=glow?10:0;
+      ctx.strokeStyle=color;ctx.lineWidth=2.2;ctx.lineJoin='round';ctx.lineCap='round';
+      ctx.beginPath();
+      for(var j=0;j<n;j++){
+        var x=xAt(j),y=yFn(data[j]);
+        if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      /* endpoint dot */
+      if(n>1){
+        var ex=xAt(n-1),ey=yFn(data[n-1]);
+        ctx.fillStyle=color;ctx.beginPath();ctx.arc(ex,ey,4,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=18;ctx.beginPath();ctx.arc(ex,ey,7,0,Math.PI*2);ctx.fillStyle=color.replace('1)','0.18)').replace('FF','').replace('#','rgba(').concat(',0.18)');ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    drawLine(loss,yLoss,'rgba(255,94,123,0.90)',true);
+    drawLine(score,yScore,'rgba(0,207,255,0.90)',true);
+    drawLine(lr,yScore,'rgba(178,247,70,0.55)',false);
+
+    /* live value labels */
+    if(n>1){
+      ctx.font='bold 11px JetBrains Mono';ctx.textAlign='left';
+      ctx.fillStyle='rgba(255,94,123,0.85)';
+      ctx.fillText('loss '+loss[n-1].toFixed(3),xAt(n-1)+8,yLoss(loss[n-1])+4);
+      ctx.fillStyle='rgba(0,207,255,0.85)';
+      ctx.fillText('score '+score[n-1].toFixed(3),xAt(n-1)+8,yScore(score[n-1])-6);
+    }
+  }
+
+  var fired=false;
+  var sec=document.getElementById('loss-section');
+  new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting||fired)return;
+      fired=true;
+      var start=performance.now(),DUR=2200;
+      (function anim(now){
+        var p=Math.min((now-start)/DUR,1);
+        var ease=p<.5?2*p*p:(1-Math.pow(-2*p+2,2)/2);
+        drawFrame(ease);
+        if(p<1)requestAnimationFrame(anim);
+        else drawFrame(1);
+      })(start);
+    });
+  },{threshold:.25}).observe(sec||cv);
+
+  drawFrame(0);
 })();
 
 /* ════════════════════════════════════════════════════

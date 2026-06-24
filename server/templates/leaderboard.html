@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PrivacyOps-X — Agent Leaderboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--cyan:#00CFFF;--violet:#7C3AED;--emerald:#10B981;--lime:#B2F746;--amber:#F59E0B;--bg:#030810;}
+*{box-sizing:border-box;}
+::selection{background:rgba(0,207,255,.18);color:#00CFFF;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:#030810;}
+::-webkit-scrollbar-thumb{background:rgba(0,207,255,.18);border-radius:2px;}
+body{background:var(--bg);color:rgba(255,255,255,.88);font-family:'Geist',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+.glass{background:rgba(5,12,32,.55);backdrop-filter:blur(48px) saturate(180%);-webkit-backdrop-filter:blur(48px) saturate(180%);border:1px solid rgba(255,255,255,.065);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 8px 40px rgba(0,0,0,.40);}
+.glass-cyan{background:rgba(0,10,28,.60);backdrop-filter:blur(48px) saturate(180%);-webkit-backdrop-filter:blur(48px) saturate(180%);border:1px solid rgba(0,207,255,.18);box-shadow:inset 0 1px 0 rgba(0,207,255,.07),0 8px 48px rgba(0,0,0,.45);}
+.grid-bg{background-image:linear-gradient(rgba(0,207,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,207,255,.03) 1px,transparent 1px);background-size:52px 52px;}
+.scan{background:repeating-linear-gradient(to bottom,transparent,transparent 2px,rgba(0,0,0,.02) 2px,rgba(0,0,0,.02) 4px);pointer-events:none;}
+.nav-link{position:relative;color:rgba(255,255,255,.40);transition:color .2s;font-size:14px;font-weight:500;}
+.nav-link::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:1px;background:#00CFFF;transform:scaleX(0);transform-origin:center;transition:transform .3s cubic-bezier(.16,1,.3,1);}
+.nav-link:hover{color:#00CFFF;}.nav-link:hover::after{transform:scaleX(1);}
+.nav-link.active{color:#B2F746;}.nav-link.active::after{background:#B2F746;transform:scaleX(1);}
+.grad-text{background:linear-gradient(120deg,#00CFFF 0%,#7C3AED 38%,#10B981 72%,#00CFFF 100%);background-size:300% 300%;animation:grad-flow 7s ease infinite;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+@keyframes grad-flow{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+
+/* RANK CARD */
+.rank-card{position:relative;overflow:hidden;transition:transform .28s cubic-bezier(.16,1,.3,1),box-shadow .28s;cursor:default;}
+.rank-card:hover{transform:translateY(-3px) scale(1.005);box-shadow:0 24px 60px rgba(0,0,0,.55);}
+.rank-card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.03) 50%,transparent 70%);background-size:300% 100%;animation:holo-sh 6s linear infinite;pointer-events:none;z-index:1;}
+@keyframes holo-sh{0%{background-position:200% 50%;}100%{background-position:-200% 50%;}}
+
+/* SCORE BAR */
+.bar-track{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:12px;}
+.bar-fill{height:100%;border-radius:3px;width:0%;transition:width 1.4s cubic-bezier(.16,1,.3,1);}
+
+/* TIER BADGE */
+.tier{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+
+/* RANK NUMBER */
+.rank-num{font-family:'Space Grotesk';font-size:72px;font-weight:800;line-height:1;position:absolute;right:20px;top:14px;opacity:.04;letter-spacing:-.04em;}
+
+/* SCORE VALUE */
+.score-val{font-family:'JetBrains Mono';font-size:34px;font-weight:700;line-height:1.1;}
+
+/* DIM MINI BARS */
+.dim-mini{display:flex;flex-direction:column;gap:3px;margin-top:14px;}
+.dim-row{display:flex;align-items:center;gap:6px;}
+.dim-label{font-family:'JetBrains Mono';font-size:8px;color:rgba(255,255,255,.25);width:70px;flex-shrink:0;text-transform:uppercase;letter-spacing:.08em;}
+.dim-track{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.05);}
+.dim-fill{height:100%;border-radius:2px;width:0%;transition:width 1.6s cubic-bezier(.16,1,.3,1);}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .75s cubic-bezier(.16,1,.3,1),transform .75s cubic-bezier(.16,1,.3,1);}
+.reveal.in{opacity:1;transform:none;}
+.dl1{transition-delay:.08s;}.dl2{transition-delay:.16s;}.dl3{transition-delay:.24s;}.dl4{transition-delay:.32s;}.dl5{transition-delay:.40s;}
+
+/* CURSOR */
+body{cursor:none;}
+a,button,[role=button]{cursor:none!important;}
+#cx-dot{position:fixed;width:7px;height:7px;border-radius:50%;background:#00CFFF;pointer-events:none;z-index:999999;transform:translate(-50%,-50%);box-shadow:0 0 10px #00CFFF,0 0 28px rgba(0,207,255,.55);transition:background .2s,width .18s,height .18s;}
+#cx-orb{position:fixed;width:40px;height:40px;border-radius:50%;pointer-events:none;z-index:999998;transform:translate(-50%,-50%);border:1px solid rgba(0,207,255,.38);background:radial-gradient(circle,rgba(0,207,255,.09) 0%,transparent 70%);mix-blend-mode:screen;transition:width .35s cubic-bezier(.16,1,.3,1),height .35s,border-color .25s;}
+#cx-dot.hov{background:#B2F746;width:10px;height:10px;box-shadow:0 0 12px #B2F746,0 0 30px rgba(178,247,70,.6);}
+#cx-orb.hov{width:58px;height:58px;border-color:rgba(178,247,70,.55);background:radial-gradient(circle,rgba(178,247,70,.10) 0%,transparent 70%);}
+@keyframes cx-ring{from{transform:translate(-50%,-50%) scale(0);opacity:.9;}to{transform:translate(-50%,-50%) scale(1);opacity:0;}}
+@keyframes cx-pt{from{transform:translate(calc(-50%),calc(-50%));opacity:1;}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0;}}
+.cx-ring{position:fixed;pointer-events:none;z-index:99990;border-radius:50%;border:1.5px solid;animation:cx-ring .6s cubic-bezier(.22,1,.36,1) forwards;}
+.cx-pt{position:fixed;pointer-events:none;z-index:99990;border-radius:50%;animation:cx-pt .5s ease-out forwards;}
+@keyframes scan-lb{0%{top:-6px;opacity:0;}4%{opacity:1;}96%{opacity:.5;}100%{top:105vh;opacity:0;}}
+#lb-scanner{position:fixed;left:0;width:100%;height:3px;pointer-events:none;z-index:9999;top:-6px;background:linear-gradient(90deg,transparent,rgba(0,207,255,.7) 35%,rgba(178,247,70,.95) 50%,rgba(0,207,255,.7) 65%,transparent);box-shadow:0 0 28px rgba(0,207,255,.65);animation:scan-lb 10s ease-in-out infinite;animation-delay:1s;}
+
+/* #1 gold glow */
+.rank-1-glow{box-shadow:inset 0 1px 0 rgba(255,215,0,.08),0 0 0 1px rgba(255,215,0,.18),0 8px 40px rgba(255,215,0,.08)!important;}
+</style>
+</head>
+<body class="min-h-screen">
+
+<div id="cx-dot"></div>
+<div id="cx-orb"></div>
+<div id="lb-scanner"></div>
+<div class="fixed inset-0 grid-bg" style="z-index:0;"></div>
+<div class="fixed inset-0 scan" style="z-index:1;pointer-events:none;"></div>
+<div class="fixed pointer-events-none" style="top:10%;left:0;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,207,255,.04) 0%,transparent 70%);z-index:0;"></div>
+<div class="fixed pointer-events-none" style="bottom:10%;right:0;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.05) 0%,transparent 70%);z-index:0;"></div>
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 w-full z-50 glass border-b" style="border-color:rgba(255,255,255,.055);">
+  <div class="max-w-[1440px] mx-auto px-6 md:px-14 h-[68px] flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2.5 no-underline">
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#00CFFF,#7C3AED);">
+        <span class="material-symbols-outlined text-white" style="font-size:18px;font-variation-settings:'FILL' 1">security</span>
+      </div>
+      <span style="font-family:'Space Grotesk';font-size:19px;font-weight:700;letter-spacing:-.02em;color:rgba(255,255,255,.92);">PrivacyOps<span style="color:#00CFFF;">·X</span></span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="/"            class="nav-link">Home</a>
+      <a href="/playground"  class="nav-link">Playground</a>
+      <a href="/dashboard"   class="nav-link">Dashboard</a>
+      <a href="/leaderboard" class="nav-link active">Leaderboard</a>
+      <a href="/docs"        class="nav-link">API Docs</a>
+    </div>
+    <a href="/playground" class="no-underline px-5 py-2.5 rounded-xl" style="background:linear-gradient(135deg,rgba(0,207,255,.12),rgba(124,58,237,.12));border:1px solid rgba(0,207,255,.32);color:#00CFFF;font-family:'JetBrains Mono';font-size:11px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;">Open Playground</a>
+  </div>
+</nav>
+
+<main class="relative pt-28 pb-24 px-6 md:px-12 max-w-[1200px] mx-auto" style="z-index:10;">
+
+  <!-- HERO -->
+  <header class="text-center mb-16 reveal">
+    <div class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full mb-8" style="border:1px solid rgba(178,247,70,.22);background:rgba(178,247,70,.06);">
+      <span class="w-2 h-2 rounded-full animate-pulse" style="background:#B2F746;box-shadow:0 0 8px #B2F746;"></span>
+      <span style="font-family:'JetBrains Mono';font-size:10px;font-weight:600;letter-spacing:.12em;color:#B2F746;text-transform:uppercase;">Live Rankings</span>
+    </div>
+    <h1 class="grad-text mb-5" style="font-family:'Space Grotesk';font-size:clamp(42px,8vw,88px);font-weight:800;letter-spacing:-.045em;line-height:.95;">Agent<br>Leaderboard</h1>
+    <p style="color:rgba(255,255,255,.38);font-size:17px;max-width:480px;margin:0 auto;line-height:1.65;">Five agents ranked by their mean final score across all PrivacyOps-X benchmark tasks.</p>
+  </header>
+
+  <!-- LEADERBOARD CARDS -->
+  <div class="flex flex-col gap-5" id="lb-list">
+
+    <!-- #1 TEACHER ORACLE -->
+    <div class="rank-card glass rounded-2xl p-6 rank-1-glow reveal dl1" data-bar="99" data-dims="99,99,98,99,99,95">
+      <div class="rank-num" style="color:rgba(255,215,0,1);">01</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);">
+            <span class="material-symbols-outlined" style="color:#FFD700;font-size:26px;font-variation-settings:'FILL' 1">emoji_events</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(255,215,0,.10);border:1px solid rgba(255,215,0,.25);color:#FFD700;">Oracle</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">Teacher Oracle</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Expert hand-crafted policy — gold standard reference</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val" style="color:#FFD700;text-shadow:0 0 24px rgba(255,215,0,.5);">0.9900</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(255,215,0,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#FFD700,#FFF176);"></div></div>
+      <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#FFD700;" data-w="99"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#FFD700;" data-w="99"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#FFD700;" data-w="98"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#FFD700;" data-w="99"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#FFD700;" data-w="99"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#FFD700;" data-w="95"></div></div></div>
+      </div>
+    </div>
+
+    <!-- #2 SELF-IMPROVED -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl2" data-bar="95" style="border-color:rgba(178,247,70,.18);">
+      <div class="rank-num" style="color:rgba(178,247,70,1);">02</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(178,247,70,.08);border:1px solid rgba(178,247,70,.22);">
+            <span class="material-symbols-outlined" style="color:#B2F746;font-size:26px;font-variation-settings:'FILL' 1">trending_up</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(178,247,70,.10);border:1px solid rgba(178,247,70,.25);color:#B2F746;">Elite</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">Self-Improved Agent</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Same agent after 20 episodes of self-improvement feedback</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val glow-lime" style="color:#B2F746;text-shadow:0 0 24px rgba(178,247,70,.55);">0.9519</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(178,247,70,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#10B981,#B2F746);" data-w="95"></div></div>
+      <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="96"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="98"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="94"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="93"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="97"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#B2F746;" data-w="91"></div></div></div>
+      </div>
+    </div>
+
+    <!-- #3 SFT CHECKPOINT -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl3" style="border-color:rgba(16,185,129,.15);">
+      <div class="rank-num" style="color:rgba(16,185,129,1);">03</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);">
+            <span class="material-symbols-outlined" style="color:#10B981;font-size:26px;font-variation-settings:'FILL' 1">model_training</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.25);color:#10B981;">Trained</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">SFT Checkpoint</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Fine-tuned model — score updates after checkpoint eval</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val" id="sft-lb-score" style="color:#10B981;text-shadow:0 0 20px rgba(16,185,129,.45);">$sft_score</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(16,185,129,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="sft-lb-bar" style="background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+      <div style="font-family:'JetBrains Mono';font-size:11px;color:rgba(255,255,255,.25);margin-top:10px;">Dimension breakdown available after eval run completes.</div>
+    </div>
+
+    <!-- #4 BASELINE -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl4" data-bar="61">
+      <div class="rank-num" style="color:rgba(245,158,11,1);">04</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);">
+            <span class="material-symbols-outlined" style="color:#F59E0B;font-size:26px;font-variation-settings:'FILL' 0">autorenew</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.25);color:#F59E0B;">Developing</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">Baseline Agent</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Pre-improvement — misses evidence checks and policy lookups</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val" style="color:#F59E0B;text-shadow:0 0 20px rgba(245,158,11,.4);">0.6087</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(245,158,11,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#F59E0B,#FCD34D);" data-w="61"></div></div>
+      <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#F59E0B;" data-w="42"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#F59E0B;" data-w="55"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#F59E0B;" data-w="30"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#F59E0B;" data-w="38"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#F59E0B;" data-w="48"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#F59E0B;" data-w="62"></div></div></div>
+      </div>
+    </div>
+
+    <!-- #5 RANDOM -->
+    <div class="rank-card glass rounded-2xl p-6 reveal dl5" data-bar="36">
+      <div class="rank-num" style="color:rgba(107,114,128,1);">05</div>
+      <div class="flex flex-col md:flex-row md:items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(107,114,128,.08);border:1px solid rgba(107,114,128,.22);">
+            <span class="material-symbols-outlined" style="color:#6B7280;font-size:26px;font-variation-settings:'FILL' 0">casino</span>
+          </div>
+          <div>
+            <div class="tier mb-2" style="background:rgba(107,114,128,.10);border:1px solid rgba(107,114,128,.22);color:#9CA3AF;">Random</div>
+            <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:rgba(255,255,255,.92);">Random Policy</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:2px;">Uniform random action selection — lower bound reference</div>
+          </div>
+        </div>
+        <div class="md:ml-auto flex flex-col items-end gap-1">
+          <div class="score-val" style="color:#9CA3AF;">0.3594</div>
+          <div style="font-family:'JetBrains Mono';font-size:9px;color:rgba(156,163,175,.45);letter-spacing:.1em;text-transform:uppercase;">Mean Final Score</div>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#4B5563,#9CA3AF);" data-w="36"></div></div>
+      <div class="dim-mini grid grid-cols-3 md:grid-cols-6 gap-x-4">
+        <div class="dim-row"><span class="dim-label">Comply</span><div class="dim-track"><div class="dim-fill" style="background:#6B7280;" data-w="25"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Safety</span><div class="dim-track"><div class="dim-fill" style="background:#6B7280;" data-w="40"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Evid.</span><div class="dim-track"><div class="dim-fill" style="background:#6B7280;" data-w="18"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Legal</span><div class="dim-track"><div class="dim-fill" style="background:#6B7280;" data-w="22"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Comm.</span><div class="dim-track"><div class="dim-fill" style="background:#6B7280;" data-w="35"></div></div></div>
+        <div class="dim-row"><span class="dim-label">Effic.</span><div class="dim-track"><div class="dim-fill" style="background:#6B7280;" data-w="55"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- IMPROVEMENT CALLOUT -->
+  <div class="reveal mt-10 glass-cyan rounded-2xl p-7 flex flex-col md:flex-row items-center gap-6">
+    <div class="text-center md:text-left flex-1">
+      <div style="font-family:'JetBrains Mono';font-size:10px;letter-spacing:.14em;color:rgba(0,207,255,.55);text-transform:uppercase;margin-bottom:8px;">Self-Improvement Delta</div>
+      <div style="font-family:'Space Grotesk';font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-.03em;">
+        <span style="color:rgba(245,158,11,.85);">0.61</span>
+        <span style="color:rgba(255,255,255,.18);font-size:.55em;margin:0 12px;">→</span>
+        <span style="color:#B2F746;text-shadow:0 0 30px rgba(178,247,70,.4);">0.95</span>
+      </div>
+      <div style="font-size:14px;color:rgba(255,255,255,.35);margin-top:8px;">+56% improvement in 20 episodes without any retraining</div>
+    </div>
+    <a href="/playground" class="flex-shrink-0 no-underline px-8 py-4 rounded-xl" style="background:linear-gradient(135deg,rgba(178,247,70,.15),rgba(0,207,255,.12));border:1px solid rgba(178,247,70,.35);color:#B2F746;font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;transition:all .3s;">
+      Reproduce It →
+    </a>
+  </div>
+
+</main>
+
+<footer class="border-t py-14 relative" style="border-color:rgba(255,255,255,.05);z-index:10;">
+  <div class="max-w-[1440px] mx-auto px-6 md:px-14 flex flex-col md:flex-row justify-between items-center gap-6">
+    <span style="font-family:'Space Grotesk';font-size:18px;font-weight:700;color:rgba(255,255,255,.6);">PrivacyOps<span style="color:#00CFFF;">·X</span></span>
+    <div class="flex gap-8">
+      <a href="/"            style="font-family:'JetBrains Mono';font-size:12px;color:rgba(255,255,255,.28);" class="hover:text-[#00CFFF] transition-colors">Home</a>
+      <a href="/playground"  style="font-family:'JetBrains Mono';font-size:12px;color:rgba(255,255,255,.28);" class="hover:text-[#00CFFF] transition-colors">Playground</a>
+      <a href="/dashboard"   style="font-family:'JetBrains Mono';font-size:12px;color:rgba(255,255,255,.28);" class="hover:text-[#00CFFF] transition-colors">Dashboard</a>
+      <a href="/docs"        style="font-family:'JetBrains Mono';font-size:12px;color:rgba(255,255,255,.28);" class="hover:text-[#00CFFF] transition-colors">API Docs</a>
+    </div>
+    <div style="font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,.18);">© 2025 PrivacyOps-X · Secure · Sovereign · Anonymous</div>
+  </div>
+</footer>
+
+<script>
+/* ── SCROLL REVEAL ── */
+var revObs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');revObs.unobserve(e.target);}});},{threshold:.08});
+document.querySelectorAll('.reveal').forEach(function(el){revObs.observe(el);});
+setTimeout(function(){document.querySelectorAll('.reveal').forEach(function(el){if(el.getBoundingClientRect().top<window.innerHeight)el.classList.add('in');});},80);
+
+/* ── ANIMATE BARS when card enters view ── */
+(function(){
+  var cardObs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting)return;
+      cardObs.unobserve(e.target);
+      setTimeout(function(){
+        e.target.querySelectorAll('.bar-fill,.dim-fill').forEach(function(bar){
+          var w=bar.dataset.w||(e.target.dataset.bar)||'0';
+          bar.style.width=w+'%';
+        });
+      },200);
+    });
+  },{threshold:.3});
+  document.querySelectorAll('.rank-card').forEach(function(c){cardObs.observe(c);});
+  /* SFT bar */
+  var sftScore=document.getElementById('sft-lb-score');
+  var sftBar=document.getElementById('sft-lb-bar');
+  if(sftScore&&sftBar){
+    var v=parseFloat(sftScore.textContent);
+    if(!isNaN(v))setTimeout(function(){sftBar.style.width=Math.round(v*100)+'%';},500);
+  }
+})();
+
+/* ── MAGNETIC CURSOR ── */
+(function(){
+  var dot=document.getElementById('cx-dot'),orb=document.getElementById('cx-orb');
+  if(!dot||!orb)return;
+  var mx=-200,my=-200,ox=-200,oy=-200,vx=0,vy=0,lx=-200,ly=-200;
+  document.addEventListener('mousemove',function(e){
+    vx=vx*.5+(e.clientX-lx)*.5;vy=vy*.5+(e.clientY-ly)*.5;
+    lx=mx=e.clientX;ly=my=e.clientY;
+    dot.style.left=mx+'px';dot.style.top=my+'px';
+  },{passive:true});
+  (function tick(){
+    ox+=(mx-ox)*.12;oy+=(my-oy)*.12;
+    orb.style.left=ox.toFixed(1)+'px';orb.style.top=oy.toFixed(1)+'px';
+    var sp=Math.hypot(vx,vy),ang=Math.atan2(vy,vx)*180/Math.PI;
+    vx*=.84;vy*=.84;
+    var sq=Math.min(sp*.048,.42);
+    orb.style.transform='translate(-50%,-50%) rotate('+ang.toFixed(1)+'deg) scale('+(1+sq).toFixed(3)+','+(1-sq*.55).toFixed(3)+')';
+    requestAnimationFrame(tick);
+  })();
+  document.querySelectorAll('a,button,[role=button]').forEach(function(el){
+    el.addEventListener('mouseenter',function(){dot.classList.add('hov');orb.classList.add('hov');});
+    el.addEventListener('mouseleave',function(){dot.classList.remove('hov');orb.classList.remove('hov');});
+  });
+})();
+
+/* ── CLICK EXPLOSION ── */
+(function(){
+  var C=['rgba(0,207,255,','rgba(178,247,70,','rgba(124,58,237,','rgba(245,158,11,'];
+  document.addEventListener('click',function(e){
+    [50,82,116].forEach(function(sz,i){
+      var r=document.createElement('div');r.className='cx-ring';
+      r.style.cssText='left:'+e.clientX+'px;top:'+e.clientY+'px;width:'+sz+'px;height:'+sz+'px;border-color:'+C[i]+'.9);animation-delay:'+(i*.07)+'s;';
+      document.body.appendChild(r);setTimeout(function(){r.remove();},800);
+    });
+    for(var i=0;i<20;i++){
+      var ang=(i/20)*Math.PI*2,dist=25+Math.random()*65;
+      var p=document.createElement('div');p.className='cx-pt';
+      var w=(1.5+Math.random()*3).toFixed(1);
+      p.style.cssText='left:'+e.clientX+'px;top:'+e.clientY+'px;width:'+w+'px;height:'+w+'px;background:'+C[i%4]+'.9);--dx:'+(Math.cos(ang)*dist).toFixed(1)+'px;--dy:'+(Math.sin(ang)*dist).toFixed(1)+'px;animation-duration:'+(.25+Math.random()*.32).toFixed(2)+'s;';
+      document.body.appendChild(p);setTimeout(function(){p.remove();},700);
+    }
+  });
+})();
+</script>
+</body>
+</html>
