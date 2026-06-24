@@ -264,9 +264,69 @@ textarea {
   transition: color 0.2s;
 }
 .quick-link:hover { color: #00CFFF; }
+
+/* ════════════════════════════════════════════════
+   MYTHIC GHOST TIER
+   ════════════════════════════════════════════════ */
+body { cursor: none; }
+a,button,select,input,[role=button] { cursor: none !important; }
+#cx-dot {
+  position:fixed;width:7px;height:7px;border-radius:50%;
+  background:#00CFFF;pointer-events:none;z-index:999999;
+  transform:translate(-50%,-50%);will-change:left,top;
+  box-shadow:0 0 10px #00CFFF,0 0 28px rgba(0,207,255,0.55);
+  transition:background .2s,box-shadow .2s,width .18s,height .18s;
+}
+#cx-orb {
+  position:fixed;width:40px;height:40px;border-radius:50%;
+  pointer-events:none;z-index:999998;transform:translate(-50%,-50%);
+  border:1px solid rgba(0,207,255,0.38);
+  background:radial-gradient(circle,rgba(0,207,255,0.09) 0%,transparent 70%);
+  mix-blend-mode:screen;
+  transition:width .35s cubic-bezier(.16,1,.3,1),height .35s cubic-bezier(.16,1,.3,1),border-color .25s,background .25s;
+}
+#cx-dot.hov{background:#B2F746;width:10px;height:10px;box-shadow:0 0 12px #B2F746,0 0 30px rgba(178,247,70,0.6);}
+#cx-orb.hov{width:58px;height:58px;border-color:rgba(178,247,70,0.55);
+  background:radial-gradient(circle,rgba(178,247,70,0.10) 0%,transparent 70%);}
+
+@keyframes cx-ring{from{transform:translate(-50%,-50%) scale(0);opacity:.9;}to{transform:translate(-50%,-50%) scale(1);opacity:0;}}
+@keyframes cx-pt{from{transform:translate(calc(-50%),calc(-50%));opacity:1;}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0;}}
+.cx-ring{position:fixed;pointer-events:none;z-index:99990;border-radius:50%;border:1.5px solid;animation:cx-ring .6s cubic-bezier(.22,1,.36,1) forwards;}
+.cx-pt{position:fixed;pointer-events:none;z-index:99990;border-radius:50%;animation:cx-pt .5s ease-out forwards;}
+
+/* STATUS GLITCH */
+@keyframes st-glitch{
+  0%{transform:translate(0);clip-path:none;}
+  12%{transform:translate(-3px,1px);clip-path:inset(25% 0 55% 0);}
+  25%{transform:translate(3px,-1px);clip-path:inset(65% 0 5% 0);}
+  38%{transform:translate(-1px,2px);clip-path:inset(40% 0 30% 0);}
+  50%{transform:translate(0);clip-path:none;}
+  100%{transform:translate(0);clip-path:none;}
+}
+.st-glitch{animation:st-glitch .35s steps(1) forwards;}
+
+/* BUTTON BURST RING */
+@keyframes btn-burst{from{transform:translate(-50%,-50%) scale(.5);opacity:.8;}to{transform:translate(-50%,-50%) scale(2.5);opacity:0;}}
+.btn-burst-ring{position:fixed;border-radius:50%;border:2px solid;pointer-events:none;z-index:99980;animation:btn-burst .55s ease-out forwards;}
+
+/* LOG ENTRY TYPEWRITER */
+@keyframes log-in{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:none;}}
+.log-new{animation:log-in .22s ease-out both;}
+
+/* SCANNER */
+@keyframes scan-pg{0%{top:-6px;opacity:0;}4%{opacity:1;}96%{opacity:.5;}100%{top:105vh;opacity:0;}}
+#pg-scanner{position:fixed;left:0;width:100%;height:3px;pointer-events:none;z-index:9999;top:-6px;
+  background:linear-gradient(90deg,transparent 0%,rgba(0,207,255,.65) 35%,rgba(178,247,70,.9) 50%,rgba(0,207,255,.65) 65%,transparent 100%);
+  box-shadow:0 0 22px rgba(0,207,255,.6),0 0 70px rgba(0,207,255,.15);
+  animation:scan-pg 11s ease-in-out infinite;animation-delay:3s;}
 </style>
 </head>
 <body class="flex flex-col min-h-screen">
+
+<!-- Mythic layer -->
+<div id="cx-dot"></div>
+<div id="cx-orb"></div>
+<div id="pg-scanner"></div>
 
 <!-- WebGL matrix rain background -->
 <canvas id="bg-canvas" class="fixed inset-0 w-full h-full" style="z-index:-3;"></canvas>
@@ -805,6 +865,80 @@ void main(){
   }
   requestAnimationFrame(frame);
 })();
+
+/* ════════════════════════════════════════════════════════
+   MYTHIC GHOST TIER — PLAYGROUND ENGINE
+   ════════════════════════════════════════════════════════ */
+
+/* ── MAGNETIC CURSOR ──────────────────────────────────── */
+(function(){
+  const dot=document.getElementById('cx-dot');
+  const orb=document.getElementById('cx-orb');
+  if(!dot||!orb)return;
+  let mx=-200,my=-200,ox=-200,oy=-200;
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX;my=e.clientY;
+    dot.style.left=mx+'px';dot.style.top=my+'px';
+  },{passive:true});
+  (function tick(){
+    ox+=(mx-ox)*.12;oy+=(my-oy)*.12;
+    orb.style.left=ox.toFixed(1)+'px';orb.style.top=oy.toFixed(1)+'px';
+    requestAnimationFrame(tick);
+  })();
+  document.querySelectorAll('a,button,[role=button]').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{dot.classList.add('hov');orb.classList.add('hov');});
+    el.addEventListener('mouseleave',()=>{dot.classList.remove('hov');orb.classList.remove('hov');});
+  });
+})();
+
+/* ── CLICK EXPLOSION ──────────────────────────────────── */
+(function(){
+  const C=['rgba(0,207,255,','rgba(178,247,70,','rgba(124,58,237,','rgba(16,185,129,'];
+  window._boom=function(x,y){
+    [50,80,115].forEach((sz,i)=>{
+      const r=document.createElement('div');r.className='cx-ring';
+      r.style.cssText='left:'+x+'px;top:'+y+'px;width:'+sz+'px;height:'+sz+'px;border-color:'+C[i]+'.9);animation-delay:'+(i*.07)+'s;';
+      document.body.appendChild(r);setTimeout(()=>r.remove(),750);
+    });
+    for(let i=0;i<22;i++){
+      const angle=(i/22)*Math.PI*2,dist=28+Math.random()*68;
+      const p=document.createElement('div');p.className='cx-pt';
+      const w=(1.5+Math.random()*2.5).toFixed(1);
+      p.style.cssText='left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+w+'px;background:'+C[i%4]+'.9);--dx:'+(Math.cos(angle)*dist).toFixed(1)+'px;--dy:'+(Math.sin(angle)*dist).toFixed(1)+'px;animation-duration:'+(.25+Math.random()*.3).toFixed(2)+'s;animation-delay:'+(Math.random()*.06).toFixed(2)+'s;';
+      document.body.appendChild(p);setTimeout(()=>p.remove(),700);
+    }
+  };
+  document.addEventListener('click',e=>window._boom(e.clientX,e.clientY));
+})();
+
+/* ── BUTTON BURST RING on reset/step ─────────────────── */
+(function(){
+  function btnBurst(btn,color){
+    const r=btn.getBoundingClientRect();
+    const cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const ring=document.createElement('div');ring.className='btn-burst-ring';
+    ring.style.cssText='left:'+cx+'px;top:'+cy+'px;width:'+(r.width*.7)+'px;height:'+(r.height*2.5)+'px;border-color:'+color+';';
+    document.body.appendChild(ring);setTimeout(()=>ring.remove(),600);
+  }
+  document.querySelector('.btn-reset').addEventListener('click',function(){btnBurst(this,'rgba(0,207,255,0.7)');});
+  document.querySelector('.btn-step').addEventListener('click',function(){btnBurst(this,'rgba(178,247,70,0.7)');});
+})();
+
+/* ── STATUS GLITCH on update ─────────────────────────── */
+const _origLog=log;
+function log(label,text,kind){
+  _origLog(label,text,kind);
+  const last=output.lastElementChild;
+  if(last){last.classList.add('log-new');}
+}
+const _origSetStatus=setStatus;
+function setStatus(text,kind){
+  _origSetStatus(text,kind);
+  statusText.classList.remove('st-glitch');
+  void statusText.offsetWidth;
+  statusText.classList.add('st-glitch');
+  setTimeout(()=>statusText.classList.remove('st-glitch'),400);
+}
 </script>
 </body>
 </html>
