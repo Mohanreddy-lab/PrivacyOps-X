@@ -541,6 +541,46 @@ a,button,select,input,[role=button] { cursor: none !important; }
               </div>
             </button>
 
+            <button onclick="setAction('flag_prompt_injection')" class="action-chip rounded-xl p-3.5 flex items-center gap-3 text-left">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(251,146,60,0.07);border:1px solid rgba(251,146,60,0.20);">
+                <span class="material-symbols-outlined" style="color:#FB923C;font-size:16px;">flag</span>
+              </div>
+              <div>
+                <div style="font-family:'JetBrains Mono';font-size:11px;color:rgba(251,146,60,0.85);">flag_prompt_injection</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.30);margin-top:2px;">Flag injection attempt</div>
+              </div>
+            </button>
+
+            <button onclick="setAction('quarantine_record',{target_id:'rec_001'})" class="action-chip rounded-xl p-3.5 flex items-center gap-3 text-left">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.20);">
+                <span class="material-symbols-outlined" style="color:#EF4444;font-size:16px;">lock</span>
+              </div>
+              <div>
+                <div style="font-family:'JetBrains Mono';font-size:11px;color:rgba(239,68,68,0.85);">quarantine_record</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.30);margin-top:2px;">Freeze suspect record</div>
+              </div>
+            </button>
+
+            <button onclick="setAction('escalate_to_dpa')" class="action-chip rounded-xl p-3.5 flex items-center gap-3 text-left">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.20);">
+                <span class="material-symbols-outlined" style="color:#8B5CF6;font-size:16px;">balance</span>
+              </div>
+              <div>
+                <div style="font-family:'JetBrains Mono';font-size:11px;color:rgba(139,92,246,0.85);">escalate_to_dpa</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.30);margin-top:2px;">72-hr DPA clock</div>
+              </div>
+            </button>
+
+            <button onclick="setAction('adversarial_review')" class="action-chip rounded-xl p-3.5 flex items-center gap-3 text-left">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.20);">
+                <span class="material-symbols-outlined" style="color:#06B6D4;font-size:16px;">psychology</span>
+              </div>
+              <div>
+                <div style="font-family:'JetBrains Mono';font-size:11px;color:rgba(6,182,212,0.85);">adversarial_review</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.30);margin-top:2px;">Red-team challenge</div>
+              </div>
+            </button>
+
           </div>
         </div>
 
@@ -594,7 +634,7 @@ a,button,select,input,[role=button] { cursor: none !important; }
         </div>
 
         <div class="text-[11px]" style="font-family:'JetBrains Mono';color:rgba(255,255,255,0.22);line-height:1.6;">
-          Flow: reset → inspect → records → policy → review → submit
+          Flow: reset → inspect → records → policy → flag/quarantine/dpa → review → adversarial → submit
         </div>
       </div>
 
@@ -624,6 +664,10 @@ a,button,select,input,[role=button] { cursor: none !important; }
     <button onclick="setAction('search_policy',{query:'deletion retention'})" class="ex-pill">search_policy</button>
     <button onclick="setAction('request_review',{reviewer:'legal'})" class="ex-pill">request_review</button>
     <button onclick="setAction('open_record',{target_id:'rec_001'})" class="ex-pill">open_record</button>
+    <button onclick="setAction('flag_prompt_injection')" class="ex-pill">flag_prompt_injection</button>
+    <button onclick="setAction('quarantine_record',{target_id:'rec_001'})" class="ex-pill">quarantine_record</button>
+    <button onclick="setAction('escalate_to_dpa')" class="ex-pill">escalate_to_dpa</button>
+    <button onclick="setAction('adversarial_review')" class="ex-pill">adversarial_review</button>
     <button onclick="setAction('submit')" class="ex-pill pill-lime">submit</button>
   </div>
 </main>
@@ -1104,7 +1148,9 @@ async function autoSolve(){
   var AC=null,master=null,muted=false;
   var FREQS={inspect_case:261.63,open_record:293.66,search_policy:329.63,set_case_field:349.23,
     message_requester:392,draft_reply:440,add_internal_note:493.88,
-    request_review:523.25,self_review:587.33,submit:659.26,default:392};
+    request_review:523.25,self_review:587.33,submit:659.26,
+    flag_prompt_injection:440,quarantine_record:493.88,escalate_to_dpa:523.25,adversarial_review:587.33,
+    default:392};
 
   function boot(){
     if(AC)return;
