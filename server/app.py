@@ -1948,12 +1948,18 @@ def dashboard() -> str:
     """
 
 
+@app.get("/playground", include_in_schema=False, response_class=HTMLResponse)
 @app.get("/playground-ui", include_in_schema=False, response_class=HTMLResponse)
 def playground_ui() -> str:
     html = _read_template("playground.html")
     if html:
         return html
     return HTMLResponse("<p>Playground template not found.</p>", status_code=404)
+
+
+@app.get("/playground/", include_in_schema=False)
+def playground_slash_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/playground", status_code=301)
 
 
 @app.get("/", include_in_schema=False)
@@ -1963,7 +1969,7 @@ def interface_redirect() -> HTMLResponse:
     return _render_home_html()
 
 
-app = gr.mount_gradio_app(app, _build_gradio_demo(), path="/playground")
+app = gr.mount_gradio_app(app, _build_gradio_demo(), path="/gradio")
 
 def main(host: str = "0.0.0.0", port: int = 8000) -> None:
     import uvicorn
