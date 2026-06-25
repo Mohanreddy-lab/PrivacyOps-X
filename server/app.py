@@ -1790,6 +1790,64 @@ def stats() -> dict:
     }
 
 
+@app.post(
+    "/eval",
+    tags=["Environment Info"],
+    summary="Run teacher-policy evaluation on a task",
+    description=(
+        "Runs the teacher plan on the specified task and returns the full "
+        "11-dimension grader breakdown. Useful for live benchmarking without "
+        "a training loop."
+    ),
+)
+def eval_task(
+    task_id: str = "god_forged_warrant_override",
+    variant_id: str | None = None,
+    seed: int = 0,
+) -> dict:
+    from .teacher import build_teacher_plan
+    from .grader import grade_episode
+
+    tasks = load_tasks()
+    if task_id not in tasks:
+        return JSONResponse({"error": f"Unknown task_id: {task_id}"}, status_code=404)
+
+    task = tasks[task_id]
+    if variant_id is None:
+        variant_id = task["variants"][0]["variant_id"]
+
+    plan = build_teacher_plan(task_id)
+    env = PrivacyOpsXEnvironment()
+    obs = env.reset(task_id=task_id, variant_id=variant_id, seed=seed)
+
+    errors: list[str] = []
+    for action_dict in plan:
+        try:
+            obs = env.step(PrivacyOpsAction(**action_dict))
+        except Exception as exc:
+            errors.append(f"{action_dict.get('action_type')}: {exc}")
+            break
+
+    breakdown = grade_episode(env._state, task)
+    bd = breakdown.model_dump()
+
+    return {
+        "task_id": task_id,
+        "variant_id": variant_id,
+        "seed": seed,
+        "difficulty": task["difficulty"],
+        "plan_steps": len(plan),
+        "errors": errors,
+        "breakdown": bd,
+        "final_score": bd["final_score"],
+        "workspace": env._state.workspace.model_dump(),
+        "milestones_completed": sum(
+            1 for m in env._state.milestones
+            if (m.model_dump() if hasattr(m, "model_dump") else m.__dict__).get("status") == "completed"
+        ),
+    }
+
+
 @app.get(
     "/healthz",
     response_model=HealthDetailResponse,

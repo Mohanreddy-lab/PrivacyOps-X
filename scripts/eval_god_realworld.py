@@ -144,20 +144,19 @@ def run_realworld_eval(variant_id: str, seed: int, verbose: bool = True) -> dict
     bd = breakdown.model_dump() if hasattr(breakdown, "model_dump") else breakdown.__dict__
 
     dims = {
-        "final_score":         ("FINAL SCORE", BOLD),
-        "compliance_score":    ("Compliance",  GREEN),
-        "safety_score":        ("Safety",      GREEN),
-        "reasoning_score":     ("Reasoning",   GREEN),
-        "efficiency_score":    ("Efficiency",  YELLOW),
-        "legal_score":         ("Legal",       YELLOW),
-        "robustness_score":    ("Robustness",  YELLOW),
-        "evidence_score":      ("Evidence",    CYAN),
-        "interaction_score":   ("Interaction", CYAN),
-        "confidence_score":    ("Confidence",  CYAN),
-        "sla_score":           ("SLA",         CYAN),
+        "final_score":          ("FINAL SCORE",     BOLD),
+        "compliance_accuracy":  ("Compliance",       GREEN),
+        "safety_score":         ("Safety",           GREEN),
+        "reasoning_quality":    ("Reasoning",        GREEN),
+        "efficiency_score":     ("Efficiency",       YELLOW),
+        "legal_consistency":    ("Legal",            YELLOW),
+        "robustness_score":     ("Robustness",       YELLOW),
+        "evidence_coverage":    ("Evidence",         CYAN),
+        "interaction_quality":  ("Interaction",      CYAN),
+        "confidence_calibration": ("Confidence",     CYAN),
+        "sla_timeliness":       ("SLA",              CYAN),
+        "deadlock_recognition": ("Deadlock Recog.",  RED),
     }
-    if "deadlock_recognition" in bd:
-        dims["deadlock_recognition"] = ("Deadlock Recog.", RED)
 
     for key, (label, color) in dims.items():
         val = bd.get(key)

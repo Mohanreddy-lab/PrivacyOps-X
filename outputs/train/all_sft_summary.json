@@ -1,0 +1,236 @@
+{
+  "benchmark": "PrivacyOps-X",
+  "tasks": [
+    {
+      "task_id": "easy_verified_access_with_injection",
+      "difficulty": "easy",
+      "plan_steps": 15,
+      "variants": [
+        "easy_ca_v1",
+        "easy_ca_v2",
+        "easy_ca_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 135,
+      "mean_score": 0.99,
+      "scores": [
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99
+      ]
+    },
+    {
+      "task_id": "medium_unverified_erasure_multi_account",
+      "difficulty": "medium",
+      "plan_steps": 19,
+      "variants": [
+        "medium_eu_v1",
+        "medium_eu_v2",
+        "medium_eu_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 171,
+      "mean_score": 0.99,
+      "scores": [
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99
+      ]
+    },
+    {
+      "task_id": "hard_guardian_minor_legal_hold_fraud",
+      "difficulty": "hard",
+      "plan_steps": 20,
+      "variants": [
+        "hard_minor_v1",
+        "hard_minor_v2",
+        "hard_minor_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 180,
+      "mean_score": 0.99,
+      "scores": [
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99
+      ]
+    },
+    {
+      "task_id": "finale_cross_border_recovery_cascade",
+      "difficulty": "hard",
+      "plan_steps": 23,
+      "variants": [
+        "finale_eu_v1",
+        "finale_eu_v2",
+        "finale_eu_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 207,
+      "mean_score": 0.99,
+      "scores": [
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99,
+        0.99
+      ]
+    },
+    {
+      "task_id": "fable_synthetic_identity_conflict",
+      "difficulty": "fable",
+      "plan_steps": 25,
+      "variants": [
+        "fable_eu_v1",
+        "fable_eu_v2",
+        "fable_eu_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 225,
+      "mean_score": 0.9658,
+      "scores": [
+        0.9658,
+        0.9658,
+        0.9658,
+        0.9658,
+        0.9658,
+        0.9658,
+        0.9658,
+        0.9658,
+        0.9658
+      ]
+    },
+    {
+      "task_id": "mythos_corporate_sanctions_erasure",
+      "difficulty": "mythos",
+      "plan_steps": 26,
+      "variants": [
+        "mythos_corp_v1",
+        "mythos_corp_v2",
+        "mythos_corp_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 234,
+      "mean_score": 0.9471,
+      "scores": [
+        0.9471,
+        0.9471,
+        0.9471,
+        0.9471,
+        0.9471,
+        0.9471,
+        0.9471,
+        0.9471,
+        0.9471
+      ]
+    },
+    {
+      "task_id": "god_forged_warrant_override",
+      "difficulty": "god",
+      "plan_steps": 26,
+      "variants": [
+        "god_warrant_v1",
+        "god_warrant_v2",
+        "god_warrant_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 234,
+      "mean_score": 0.9359,
+      "scores": [
+        0.9359,
+        0.9359,
+        0.9359,
+        0.9359,
+        0.9359,
+        0.9359,
+        0.9359,
+        0.9359,
+        0.9359
+      ]
+    },
+    {
+      "task_id": "irreducible_constitutional_deadlock",
+      "difficulty": "irreducible",
+      "plan_steps": 27,
+      "variants": [
+        "irreducible_v1",
+        "irreducible_v2",
+        "irreducible_v3"
+      ],
+      "seeds": [
+        0,
+        42,
+        123
+      ],
+      "total_examples": 243,
+      "mean_score": 0.9667,
+      "scores": [
+        0.9667,
+        0.9667,
+        0.9667,
+        0.9667,
+        0.9667,
+        0.9667,
+        0.9667,
+        0.9667,
+        0.9667
+      ]
+    }
+  ],
+  "total_examples": 1629,
+  "seeds": [
+    0,
+    42,
+    123
+  ],
+  "output_merged": "outputs\\train\\all_sft.jsonl"
+}

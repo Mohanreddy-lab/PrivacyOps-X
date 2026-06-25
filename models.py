@@ -170,6 +170,7 @@ class BenchmarkBreakdown(BaseModel):
     evidence_coverage: float = Field(ge=0.0, le=1.0)
     interaction_quality: float = Field(ge=0.0, le=1.0)
     confidence_calibration: float = Field(ge=0.0, le=1.0)
+    sla_timeliness: float = Field(default=1.0, ge=0.0, le=1.0)
     deadlock_recognition: float = Field(default=1.0, ge=0.0, le=1.0)
     final_score: float = Field(ge=0.0, le=1.0)
 

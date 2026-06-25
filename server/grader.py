@@ -283,6 +283,7 @@ def grade_episode(state: PrivacyOpsState, task: dict[str, Any]) -> BenchmarkBrea
         evidence_coverage=round(evidence_coverage, 4),
         interaction_quality=round(interaction_quality, 4),
         confidence_calibration=round(confidence_calibration, 4),
+        sla_timeliness=round(sla_timeliness, 4),
         deadlock_recognition=round(deadlock_recognition, 4),
         final_score=final_score,
     )
