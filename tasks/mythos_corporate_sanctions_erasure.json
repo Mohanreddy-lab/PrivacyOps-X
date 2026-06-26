@@ -117,8 +117,7 @@
   "required_explanation_tags": [
     "jurisdiction_gdpr",
     "legal_hold_conflict_detected",
-    "fraud_investigation_detected",
-    "partial_action_only"
+    "fraud_investigation_detected"
   ],
   "required_note_keywords": [
     "sanctions flag",
@@ -147,6 +146,7 @@
   ],
   "teacher_policy_query": "sanctions watchlist whistleblower protection regulatory subpoena legal hold entity verification denial",
   "teacher_requester_message": "We cannot process this erasure request. DataFlow Corp matches a sanctions watchlist entry requiring denial and immediate reporting to the compliance officer. Whistleblower protection and regulatory subpoena preserve 8 records regardless of controller authority.",
+  "teacher_requester_message_2": "Whistleblower protection order under GDPR Article 17(3) applies to these records and no disclosure or deletion is permitted.",
   "teacher_internal_note": "sanctions flag; whistleblower protection; regulatory subpoena; rejected entity; cross-border preservation",
   "teacher_reply": "We cannot process this request. DataFlow Corp matches a sanctions watchlist entry. Sanctions review is required before any processing can occur. Legal hold from whistleblower protection and regulatory investigation prevents deletion of protected records. This case is denied pending sanctions clearance.",
   "optimal_steps": 38,

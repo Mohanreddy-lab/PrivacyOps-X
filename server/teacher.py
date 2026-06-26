@@ -40,10 +40,18 @@ def build_teacher_plan(task_id: str) -> list[dict[str, Any]]:
     query = task.get("teacher_policy_query")
     if query:
         actions.append({"action_type": "search_policy", "query": query})
+    # open_policy_article only for tasks with 5+ required policies; easier tasks
+    # get full policy coverage from search_policy alone (visible_policy_ids counts).
+    if len(task.get("required_policy_articles", [])) >= 5:
+        for policy_id in task["required_policy_articles"]:
+            actions.append({"action_type": "open_policy_article", "target_id": policy_id})
 
     requester_message = task.get("teacher_requester_message")
     if requester_message and task.get("required_requester_facts"):
         actions.append({"action_type": "message_requester", "content": requester_message})
+    requester_message_2 = task.get("teacher_requester_message_2")
+    if requester_message_2 and task.get("required_requester_facts"):
+        actions.append({"action_type": "message_requester", "content": requester_message_2})
 
     for field_name in FIELD_ORDER:
         field_value = expected[field_name]

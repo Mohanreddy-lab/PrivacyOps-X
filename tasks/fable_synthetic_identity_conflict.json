@@ -142,6 +142,7 @@
   ],
   "teacher_policy_query": "synthetic identity fraud executor claim minor guardian legal hold",
   "teacher_requester_message": "Please provide executor documentation and explain how the executor claim is consistent with the live access request filed 6 days ago from the primary account email. Legal hold and synthetic identity review prevent any deletion currently.",
+  "teacher_requester_message_2": "The executor claim directly conflicts with the live account activity and contradicts the active request. Please address this contradiction.",
   "teacher_internal_note": "synthetic identity flag; executor claim contradicts live account; legal hold; minor protection; family plan scope",
   "teacher_reply": "We cannot proceed with this request. Verify your authority as guardian and executor. A live request from the primary account contradicts the executor death claim. Legal hold prevents deletion while synthetic identity review is open. Executor documentation required.",
   "optimal_steps": 30,

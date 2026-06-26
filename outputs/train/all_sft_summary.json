@@ -116,7 +116,7 @@
     {
       "task_id": "fable_synthetic_identity_conflict",
       "difficulty": "fable",
-      "plan_steps": 25,
+      "plan_steps": 31,
       "variants": [
         "fable_eu_v1",
         "fable_eu_v2",
@@ -127,24 +127,24 @@
         42,
         123
       ],
-      "total_examples": 225,
-      "mean_score": 0.9658,
+      "total_examples": 279,
+      "mean_score": 0.9804,
       "scores": [
-        0.9658,
-        0.9658,
-        0.9658,
-        0.9658,
-        0.9658,
-        0.9658,
-        0.9658,
-        0.9658,
-        0.9658
+        0.9804,
+        0.9804,
+        0.9804,
+        0.9804,
+        0.9804,
+        0.9804,
+        0.9804,
+        0.9804,
+        0.9804
       ]
     },
     {
       "task_id": "mythos_corporate_sanctions_erasure",
       "difficulty": "mythos",
-      "plan_steps": 26,
+      "plan_steps": 32,
       "variants": [
         "mythos_corp_v1",
         "mythos_corp_v2",
@@ -155,24 +155,24 @@
         42,
         123
       ],
-      "total_examples": 234,
-      "mean_score": 0.9471,
+      "total_examples": 288,
+      "mean_score": 0.9775,
       "scores": [
-        0.9471,
-        0.9471,
-        0.9471,
-        0.9471,
-        0.9471,
-        0.9471,
-        0.9471,
-        0.9471,
-        0.9471
+        0.9775,
+        0.9775,
+        0.9775,
+        0.9775,
+        0.9775,
+        0.9775,
+        0.9775,
+        0.9775,
+        0.9775
       ]
     },
     {
       "task_id": "god_forged_warrant_override",
       "difficulty": "god",
-      "plan_steps": 26,
+      "plan_steps": 32,
       "variants": [
         "god_warrant_v1",
         "god_warrant_v2",
@@ -183,24 +183,24 @@
         42,
         123
       ],
-      "total_examples": 234,
-      "mean_score": 0.9359,
+      "total_examples": 288,
+      "mean_score": 0.9485,
       "scores": [
-        0.9359,
-        0.9359,
-        0.9359,
-        0.9359,
-        0.9359,
-        0.9359,
-        0.9359,
-        0.9359,
-        0.9359
+        0.9485,
+        0.9485,
+        0.9485,
+        0.9485,
+        0.9485,
+        0.9485,
+        0.9485,
+        0.9485,
+        0.9485
       ]
     },
     {
       "task_id": "irreducible_constitutional_deadlock",
       "difficulty": "irreducible",
-      "plan_steps": 27,
+      "plan_steps": 33,
       "variants": [
         "irreducible_v1",
         "irreducible_v2",
@@ -211,22 +211,22 @@
         42,
         123
       ],
-      "total_examples": 243,
-      "mean_score": 0.9667,
+      "total_examples": 297,
+      "mean_score": 0.975,
       "scores": [
-        0.9667,
-        0.9667,
-        0.9667,
-        0.9667,
-        0.9667,
-        0.9667,
-        0.9667,
-        0.9667,
-        0.9667
+        0.975,
+        0.975,
+        0.975,
+        0.975,
+        0.975,
+        0.975,
+        0.975,
+        0.975,
+        0.975
       ]
     }
   ],
-  "total_examples": 1629,
+  "total_examples": 1845,
   "seeds": [
     0,
     42,
